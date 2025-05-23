@@ -86,6 +86,11 @@ class Product {
 
     static async findById(id) {
         try {
+            // Validate id
+            if (!id || isNaN(id)) {
+                throw new Error('Invalid product ID');
+            }
+
             const [products] = await pool.query(`
                 SELECT p.*, c.name as category_name,
                        CASE 
@@ -96,6 +101,11 @@ class Product {
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE p.id = ?
             `, [id]);
+
+            if (!products || products.length === 0) {
+                return null;
+            }
+
             return products[0];
         } catch (error) {
             console.error('Error in Product.findById:', error);
@@ -272,6 +282,24 @@ class Product {
         }
         
         return Object.keys(errors).length === 0 ? null : errors;
+    }
+
+    static async getStats() {
+        const [stats] = await pool.query(`
+            SELECT 
+                COUNT(*) as totalProducts,
+                COUNT(CASE WHEN stock > 0 THEN 1 END) as inStockProducts,
+                COUNT(CASE WHEN stock = 0 THEN 1 END) as outOfStockProducts,
+                COUNT(DISTINCT category_id) as totalCategories
+            FROM products
+        `);
+        
+        return {
+            totalProducts: parseInt(stats[0].totalProducts || 0),
+            inStockProducts: parseInt(stats[0].inStockProducts || 0),
+            outOfStockProducts: parseInt(stats[0].outOfStockProducts || 0),
+            totalCategories: parseInt(stats[0].totalCategories || 0)
+        };
     }
 }
 

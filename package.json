@@ -21,6 +21,7 @@
     "express-session": "^1.17.3",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.0",
     "mysql2": "^3.14.1",
     "online-shop": "file:",
     "sequelize": "^6.37.7"

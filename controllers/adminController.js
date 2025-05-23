@@ -19,6 +19,9 @@ const db = require('../config/database');
 const { Op } = require('sequelize');
 const sequelize = require('sequelize');
 const OrderItem = require('../models/OrderItem');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
 
 // Middleware to check if user is admin
 exports.isAdmin = (req, res, next) => {
@@ -34,115 +37,43 @@ exports.isAdmin = (req, res, next) => {
 // Admin dashboard
 exports.index = async (req, res) => {
     try {
-        let totalProducts = 0;
-        let totalCategories = 0;
-        let totalOrders = 0;
-        let totalUsers = 0;
-        let recentOrders = [];
-        let topProducts = [];
-        let totalRevenue = 0;
-        let pendingOrders = 0;
-        let completedOrders = 0;
-        let monthlySales = [];
+        // Get dashboard statistics
+        const [
+            totalProducts,
+            totalCategories,
+            totalOrders,
+            totalUsers,
+            recentOrders,
+            topProducts,
+            orderStats,
+            monthlySales
+        ] = await Promise.all([
+            Product.count(),
+            Category.count(),
+            Order.count(),
+            User.count(),
+            Order.findRecent(5),
+            Product.getTopSelling(5),
+            Order.getLast30DaysStats(),
+            Order.getMonthlySales(6)
+        ]);
 
-        try {
-            totalProducts = await Product.count();
-        } catch (error) {
-            console.error('Error getting total products:', error);
-        }
+        // Format data for display
+        const formattedRecentOrders = recentOrders.map(order => ({
+            ...order,
+            formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
+            formatted_date: new Date(order.created_at).toLocaleDateString()
+        }));
 
-        try {
-            totalCategories = await Category.count();
-        } catch (error) {
-            console.error('Error getting total categories:', error);
-        }
+        const formattedTopProducts = topProducts.map(product => ({
+            ...product,
+            formatted_price: parseFloat(product.price || 0).toFixed(2)
+        }));
 
-        try {
-            totalOrders = await Order.count();
-        } catch (error) {
-            console.error('Error getting total orders:', error);
-        }
-
-        try {
-            totalUsers = await User.count();
-        } catch (error) {
-            console.error('Error getting total users:', error);
-        }
-
-        try {
-            recentOrders = await Order.findRecent(5);
-            // Format order data
-            recentOrders = recentOrders.map(order => ({
-                ...order,
-                formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
-                formatted_date: new Date(order.created_at).toLocaleDateString()
-            }));
-        } catch (error) {
-            console.error('Error getting recent orders:', error);
-        }
-
-        try {
-            topProducts = await Product.getTopSelling(5);
-            // Format product data
-            topProducts = topProducts.map(product => ({
-                ...product,
-                formatted_price: parseFloat(product.price || 0).toFixed(2)
-            }));
-        } catch (error) {
-            console.error('Error getting top products:', error);
-        }
-
-        try {
-            const [revenueResult] = await pool.query(`
-                SELECT COALESCE(SUM(total_amount), 0) as total
-                FROM orders
-                WHERE status = 'completed'
-            `);
-            totalRevenue = parseFloat(revenueResult[0].total) || 0;
-        } catch (error) {
-            console.error('Error getting total revenue:', error);
-        }
-
-        try {
-            const [pendingResult] = await pool.query(`
-                SELECT COUNT(*) as count
-                FROM orders
-                WHERE status = 'pending'
-            `);
-            pendingOrders = parseInt(pendingResult[0].count) || 0;
-        } catch (error) {
-            console.error('Error getting pending orders:', error);
-        }
-
-        try {
-            const [completedResult] = await pool.query(`
-                SELECT COUNT(*) as count
-                FROM orders
-                WHERE status = 'completed'
-            `);
-            completedOrders = parseInt(completedResult[0].count) || 0;
-        } catch (error) {
-            console.error('Error getting completed orders:', error);
-        }
-
-        try {
-            const [monthlyResult] = await pool.query(`
-                SELECT 
-                    DATE_FORMAT(created_at, '%Y-%m') as month,
-                    COALESCE(SUM(total_amount), 0) as total
-                FROM orders
-                WHERE status = 'completed'
-                AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-                ORDER BY month ASC
-            `);
-            monthlySales = monthlyResult.map(row => ({
-                month: row.month,
-                total: parseFloat(row.total) || 0
-            }));
-        } catch (error) {
-            console.error('Error getting monthly sales:', error);
-        }
+        const formattedMonthlySales = monthlySales.map(sale => ({
+            month: new Date(sale.year, sale.month - 1).toLocaleString('default', { month: 'short' }),
+            total: parseFloat(sale.total || 0)
+        }));
 
         res.render('admin/dashboard', {
             title: 'Admin Dashboard',
@@ -150,12 +81,12 @@ exports.index = async (req, res) => {
             totalCategories,
             totalOrders,
             totalUsers,
-            recentOrders,
-            topProducts,
-            totalRevenue: totalRevenue.toFixed(2),
-            pendingOrders,
-            completedOrders,
-            monthlySales
+            recentOrders: formattedRecentOrders,
+            topProducts: formattedTopProducts,
+            totalRevenue: orderStats.totalRevenue.toFixed(2),
+            pendingOrders: orderStats.pendingOrders,
+            completedOrders: orderStats.completedOrders,
+            monthlySales: formattedMonthlySales
         });
     } catch (error) {
         console.error('Error in admin dashboard:', error);
@@ -170,8 +101,10 @@ exports.index = async (req, res) => {
 // Product management
 exports.getProducts = async (req, res) => {
     try {
-        const products = await Product.findAll();
-        const categories = await Category.findAll();
+        const [products, categories] = await Promise.all([
+            Product.findAll(),
+            Category.findAll()
+        ]);
         
         // Format product data
         const formattedProducts = products.map(product => ({
@@ -219,28 +152,63 @@ exports.createProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
     try {
-        const errors = await Product.validate(req.body);
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Validate the update data
+        const errors = await Product.validate(updateData);
         if (errors) {
-            return res.status(400).json({ errors });
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation failed',
+                    errors
+                });
+            }
+            return res.status(400).render('admin/products', {
+                title: 'Manage Products',
+                error: 'Validation failed',
+                errors
+            });
         }
 
-        const success = await Product.update(req.params.id, req.body);
+        // Update the product
+        const success = await Product.update(parseInt(id), updateData);
         if (!success) {
-            return res.status(404).json({
-                success: false,
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Product not found'
+                });
+            }
+            return res.status(404).render('error', {
+                title: 'Error',
                 message: 'Product not found'
             });
         }
 
-        res.json({
-            success: true,
-            message: 'Product updated successfully'
-        });
+        // Send response based on request type
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                success: true,
+                message: 'Product updated successfully'
+            });
+        }
+        
+        req.flash('success', 'Product updated successfully');
+        res.redirect('/admin/products');
     } catch (error) {
         console.error('Error in updateProduct:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating product'
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating product'
+            });
+        }
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error updating product',
+            error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
 };
@@ -272,7 +240,7 @@ exports.deleteProduct = async (req, res) => {
 exports.getCategories = async (req, res) => {
     try {
         const categories = await Category.findAll();
-        res.render('admin/categories/index', {
+        res.render('admin/categories', {
             title: 'Manage Categories',
             categories
         });
@@ -310,28 +278,63 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
     try {
-        const errors = await Category.validate(req.body);
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Validate the update data
+        const errors = await Category.validate(updateData);
         if (errors) {
-            return res.status(400).json({ errors });
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation failed',
+                    errors
+                });
+            }
+            return res.status(400).render('admin/categories', {
+                title: 'Manage Categories',
+                error: 'Validation failed',
+                errors
+            });
         }
 
-        const success = await Category.update(req.params.id, req.body);
+        // Update the category
+        const success = await Category.update(parseInt(id), updateData);
         if (!success) {
-            return res.status(404).json({
-                success: false,
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Category not found'
+                });
+            }
+            return res.status(404).render('error', {
+                title: 'Error',
                 message: 'Category not found'
             });
         }
 
-        res.json({
-            success: true,
-            message: 'Category updated successfully'
-        });
+        // Send response based on request type
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                success: true,
+                message: 'Category updated successfully'
+            });
+        }
+        
+        req.flash('success', 'Category updated successfully');
+        res.redirect('/admin/categories');
     } catch (error) {
         console.error('Error in updateCategory:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating category'
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating category'
+            });
+        }
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error updating category',
+            error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
 };
@@ -387,23 +390,46 @@ exports.getOrders = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
     try {
-        const success = await Order.update(req.params.id, req.body);
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Update the order
+        const success = await Order.updateStatus(parseInt(id), updateData.status);
         if (!success) {
-            return res.status(404).json({
-                success: false,
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Order not found'
+                });
+            }
+            return res.status(404).render('error', {
+                title: 'Error',
                 message: 'Order not found'
             });
         }
 
-        res.json({
-            success: true,
-            message: 'Order updated successfully'
-        });
+        // Send response based on request type
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                success: true,
+                message: 'Order updated successfully'
+            });
+        }
+        
+        req.flash('success', 'Order updated successfully');
+        res.redirect('/admin/orders');
     } catch (error) {
         console.error('Error in updateOrder:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating order'
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating order'
+            });
+        }
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error updating order',
+            error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
 };
@@ -435,23 +461,63 @@ exports.getUsers = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
     try {
-        const success = await User.update(req.params.id, req.body);
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Validate the update data
+        const errors = await User.validate(updateData);
+        if (errors) {
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation failed',
+                    errors
+                });
+            }
+            return res.status(400).render('admin/users', {
+                title: 'Manage Users',
+                error: 'Validation failed',
+                errors
+            });
+        }
+
+        // Update the user
+        const success = await User.update(parseInt(id), updateData);
         if (!success) {
-            return res.status(404).json({
-                success: false,
+            if (req.xhr || req.headers.accept.includes('application/json')) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+            return res.status(404).render('error', {
+                title: 'Error',
                 message: 'User not found'
             });
         }
 
-        res.json({
-            success: true,
-            message: 'User updated successfully'
-        });
+        // Send response based on request type
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                success: true,
+                message: 'User updated successfully'
+            });
+        }
+        
+        req.flash('success', 'User updated successfully');
+        res.redirect('/admin/users');
     } catch (error) {
         console.error('Error in updateUser:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating user'
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating user'
+            });
+        }
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error updating user',
+            error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
 };
@@ -482,30 +548,136 @@ exports.deleteUser = async (req, res) => {
 // Analytics
 exports.analytics = async (req, res) => {
     try {
+        // Get sales data for the last 6 months
         const salesData = await Order.getMonthlySales(6);
+        const formattedSalesData = Order.formatMonthlySalesData(salesData);
+        
+        // Get top 5 selling products
         const productsData = await OrderItem.getTopSellingProducts(5);
+        const formattedProductsData = OrderItem.formatProductsData(productsData);
 
-        // Format data for charts
+        // Calculate total sales for the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const recentSales = await Order.getSalesByDateRange(thirtyDaysAgo, new Date());
+        const formattedTotalSales = Order.calculateTotalSales(recentSales);
+
+        // Get order statistics for the last 30 days
+        const orderStats = await Order.getLast30DaysStats();
+
+        // Get user statistics
+        const userStats = await User.getStats();
+
+        // Get product statistics
+        const productStats = await Product.getStats();
+
+        // Get recent orders
+        const recentOrders = await Order.getRecentOrders(5);
+
+        // Format chart data for sales
         const salesChartData = {
-            labels: salesData.map(item => item.month),
-            values: salesData.map(item => item.total)
+            type: 'line',
+            data: {
+                labels: formattedSalesData.map(item => item.month),
+                datasets: [{
+                    label: 'Monthly Sales',
+                    data: formattedSalesData.map(item => parseFloat(item.total)),
+                    borderColor: '#17a2b8',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
         };
 
+        // Format chart data for products
         const productsChartData = {
-            labels: productsData.map(item => item.name),
-            values: productsData.map(item => item.total_quantity)
+            type: 'bar',
+            data: {
+                labels: formattedProductsData.map(item => item.name),
+                datasets: [{
+                    label: 'Products Sold',
+                    data: formattedProductsData.map(item => parseInt(item.total_quantity)),
+                    backgroundColor: '#28a745',
+                    borderColor: '#28a745',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
         };
 
         res.render('admin/analytics', {
             title: 'Analytics',
-            salesChartData,
-            productsChartData
+            salesData: formattedSalesData,
+            productsData: formattedProductsData,
+            formattedTotalSales,
+            totalOrders: orderStats.totalOrders,
+            totalRevenue: orderStats.totalRevenue.toFixed(2),
+            pendingOrders: orderStats.pendingOrders,
+            completedOrders: orderStats.completedOrders,
+            totalUsers: userStats.totalUsers,
+            totalAdmins: userStats.totalAdmins,
+            totalCustomers: userStats.totalCustomers,
+            totalProducts: productStats.totalProducts,
+            inStockProducts: productStats.inStockProducts,
+            outOfStockProducts: productStats.outOfStockProducts,
+            totalCategories: productStats.totalCategories,
+            recentOrders,
+            salesChartData: JSON.stringify(salesChartData),
+            productsChartData: JSON.stringify(productsChartData)
         });
     } catch (error) {
         console.error('Error in analytics:', error);
         res.status(500).render('error', {
             title: 'Error',
-            message: 'Error loading analytics',
+            message: 'Error loading analytics data',
             error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
@@ -691,5 +863,136 @@ exports.dashboard = async (req, res) => {
     } catch (error) {
         console.error('Error loading dashboard:', error);
         res.status(500).render('error', { message: 'Error loading dashboard' });
+    }
+};
+
+// Get single product
+exports.getProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productId = parseInt(id);
+        
+        // Validate product ID
+        if (isNaN(productId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID'
+            });
+        }
+
+        const product = await Product.findById(productId);
+        
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Format product data
+        const formattedProduct = {
+            id: product.id,
+            name: product.name,
+            category_id: product.category_id,
+            price: parseFloat(product.price).toFixed(2),
+            stock: parseInt(product.stock),
+            description: product.description,
+            status: product.status,
+            image_url: product.image_url
+        };
+
+        res.json({
+            success: true,
+            product: formattedProduct
+        });
+    } catch (error) {
+        console.error('Error in getProduct:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading product'
+        });
+    }
+};
+
+// Configure multer for image upload
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/images/products')
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    fileFilter: function (req, file, cb) {
+        const filetypes = /jpeg|jpg|png|gif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only image files are allowed!'));
+    }
+}).single('image');
+
+// Upload product image
+exports.uploadProductImage = (req, res) => {
+    upload(req, res, function (err) {
+        if (err) {
+            console.error('Error uploading image:', err);
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        // Return the full path that will be stored in the database
+        const imagePath = `/images/products/${req.file.filename}`;
+        
+        res.json({
+            success: true,
+            url: imagePath
+        });
+    });
+};
+
+// Get product images
+exports.getProductImages = async (req, res) => {
+    try {
+        const imagesDir = path.join(__dirname, '../public/images/products');
+        
+        // Create directory if it doesn't exist
+        try {
+            await fs.access(imagesDir);
+        } catch (error) {
+            await fs.mkdir(imagesDir, { recursive: true });
+        }
+        
+        const files = await fs.readdir(imagesDir);
+        
+        const images = files
+            .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
+            .map(file => ({
+                name: file,
+                url: `/images/products/${file}`
+            }));
+
+        res.json(images);
+    } catch (error) {
+        console.error('Error getting product images:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading images'
+        });
     }
 };

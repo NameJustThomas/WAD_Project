@@ -133,24 +133,17 @@ class User {
   static async getStats() {
     const [stats] = await pool.query(`
       SELECT 
-        COUNT(*) as total_users,
-        COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins,
-        COUNT(CASE WHEN role = 'user' THEN 1 END) as total_customers,
-        COUNT(DISTINCT o.user_id) as users_with_orders,
-        COALESCE(AVG(CASE WHEN o.status != 'cancelled' THEN o.total_amount END), 0) as average_order_value
-      FROM users u
-      LEFT JOIN orders o ON u.id = o.user_id
+        COUNT(*) as totalUsers,
+        COUNT(CASE WHEN role = 'admin' THEN 1 END) as totalAdmins,
+        COUNT(CASE WHEN role = 'user' THEN 1 END) as totalCustomers
+      FROM users
     `);
     
-    // Convert string values to numbers
-    const result = stats[0];
-    result.total_users = parseInt(result.total_users);
-    result.total_admins = parseInt(result.total_admins);
-    result.total_customers = parseInt(result.total_customers);
-    result.users_with_orders = parseInt(result.users_with_orders);
-    result.average_order_value = parseFloat(result.average_order_value);
-    
-    return result;
+    return {
+      totalUsers: parseInt(stats[0].totalUsers || 0),
+      totalAdmins: parseInt(stats[0].totalAdmins || 0),
+      totalCustomers: parseInt(stats[0].totalCustomers || 0)
+    };
   }
 
   static async validate(data) {
