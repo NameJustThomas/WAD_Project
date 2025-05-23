@@ -18,9 +18,10 @@ const User = require('../models/User');
 
 // Show login page
 exports.showLogin = (req, res) => {
+    const error = req.flash('error');
     res.render('auth/login', {
         title: 'Login',
-        error: req.flash('error')
+        error: error.length > 0 ? error[0] : null
     });
 };
 
@@ -39,7 +40,7 @@ exports.login = async (req, res) => {
         // Check if user exists
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (!users.length) {
-            req.flash('error', 'Invalid credentials');
+            req.flash('error', 'Invalid email or password');
             return res.redirect('/login');
         }
 
@@ -48,7 +49,7 @@ exports.login = async (req, res) => {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            req.flash('error', 'Invalid credentials');
+            req.flash('error', 'Invalid email or password');
             return res.redirect('/login');
         }
 
@@ -60,7 +61,7 @@ exports.login = async (req, res) => {
             email: user.email,
             role: user.role
         };
-        res.locals.user = req.session.user; // Add user to res.locals for views
+        res.locals.user = req.session.user;
 
         // Check if there was a checkout intent
         if (req.session.checkoutIntent) {
@@ -74,16 +75,17 @@ exports.login = async (req, res) => {
         res.redirect(returnTo);
     } catch (error) {
         console.error('Error in login:', error);
-        req.flash('error', 'Error logging in');
+        req.flash('error', 'An error occurred during login. Please try again.');
         res.redirect('/login');
     }
 };
 
 // Show register page
 exports.showRegister = (req, res) => {
+    const error = req.flash('error');
     res.render('auth/register', {
         title: 'Register',
-        error: req.flash('error')
+        error: error.length > 0 ? error[0] : null
     });
 };
 
@@ -102,7 +104,7 @@ exports.register = async (req, res) => {
         // Check if user exists
         const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUsers.length) {
-            req.flash('error', 'Email already registered');
+            req.flash('error', 'This email is already registered');
             return res.redirect('/register');
         }
 
@@ -128,7 +130,7 @@ exports.register = async (req, res) => {
         res.redirect('/');
     } catch (error) {
         console.error('Error in register:', error);
-        req.flash('error', 'Error registering user');
+        req.flash('error', 'An error occurred during registration. Please try again.');
         res.redirect('/register');
     }
 };
