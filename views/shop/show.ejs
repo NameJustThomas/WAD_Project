@@ -1,0 +1,244 @@
+<!--
+ * Product Detail Page
+ * Purpose: Display detailed product information
+ * Used by: productController.show
+ * Features:
+ * - Product images
+ * - Product description
+ * - Price and availability
+ * - Add to cart
+ * - Related products
+ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= product.name %> - Online Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .product-gallery {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .main-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .thumbnail-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .thumbnail.active {
+            border-color: #0d6efd;
+        }
+        .product-info {
+            padding: 20px;
+        }
+        .product-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .product-category {
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        .price-container {
+            margin: 20px 0;
+        }
+        .original-price {
+            color: #6c757d;
+            text-decoration: line-through;
+            font-size: 1.2rem;
+        }
+        .discount-price {
+            color: #dc3545;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .quantity-input {
+            width: 100px;
+            text-align: center;
+        }
+        .related-products {
+            margin-top: 50px;
+        }
+        .related-product-card {
+            transition: transform 0.2s;
+            border: 1px solid #ddd;
+            height: 100%;
+        }
+        .related-product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .related-product-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        @media (max-width: 768px) {
+            .main-image {
+                height: 300px;
+            }
+            .thumbnail {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <section class="product-detail py-5">
+        <div class="container">
+            <div class="row">
+                <!-- Product Gallery -->
+                <div class="col-md-6">
+                    <div class="product-gallery">
+                        <img src="<%= product.image_url %>" alt="<%= product.name %>" class="main-image">
+                        <div class="thumbnail-container">
+                            <img src="<%= product.image_url %>" 
+                                 alt="<%= product.name %>" 
+                                 class="thumbnail active"
+                                 data-full-image="<%= product.image_url %>">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Product Info -->
+                <div class="col-md-6">
+                    <div class="product-info">
+                        <h1 class="product-title"><%= product.name %></h1>
+                        <p class="product-category"><%= product.category_name %></p>
+                        <div class="price-container">
+                            <% if (product.has_discount) { %>
+                                <p class="original-price">$<%= product.price %></p>
+                                <p class="discount-price">$<%= product.discount_price %></p>
+                            <% } else { %>
+                                <p class="price">$<%= product.price %></p>
+                            <% } %>
+                        </div>
+                        <p class="product-description"><%= product.description %></p>
+                        <!-- Add to Cart Form -->
+                        <form class="add-to-cart-form" data-product-id="<%= product.id %>">
+                            <div class="quantity-selector">
+                                <button type="button" class="quantity-btn minus">-</button>
+                                <input type="number" name="quantity" value="1" min="1" max="<%= product.stock %>" class="quantity-input">
+                                <button type="button" class="quantity-btn plus">+</button>
+                            </div>
+                            <button type="submit" class="add-to-cart" data-product-id="<%= product.id %>">
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                        </form>
+                        <p class="text-muted">Available: <span id="availableStock"><%= product.stock %></span> items</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Products -->
+            <% if (relatedProducts && relatedProducts.length > 0) { %>
+                <div class="related-products">
+                    <h3 class="mb-4">Related Products</h3>
+                    <div class="row">
+                        <% relatedProducts.forEach(relatedProduct => { %>
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card related-product-card">
+                                    <img src="<%= relatedProduct.image %>" class="card-img-top related-product-image" alt="<%= relatedProduct.name %>">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><%= relatedProduct.name %></h5>
+                                        <div class="price-container">
+                                            <% if (relatedProduct.has_discount) { %>
+                                                <p class="original-price text-decoration-line-through">$<%= relatedProduct.price %></p>
+                                                <p class="discount-price">$<%= relatedProduct.discount_price %></p>
+                                            <% } else { %>
+                                                <p class="price">$<%= relatedProduct.price %></p>
+                                            <% } %>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <a href="/products/<%= relatedProduct.id %>" class="btn btn-outline-primary">View Details</a>
+                                            <button class="btn btn-primary add-to-cart" data-product-id="<%= relatedProduct.id %>">
+                                                <i class="fas fa-cart-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </section>
+
+    <%- include('../partials/footer') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle thumbnail clicks
+            const mainImage = document.querySelector('.main-image');
+            const thumbnails = document.querySelectorAll('.thumbnail');
+
+            thumbnails.forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    // Update main image
+                    mainImage.src = this.src;
+                    
+                    // Update active state
+                    thumbnails.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Handle main image click for zoom
+            mainImage.addEventListener('click', function() {
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-body p-0">
+                                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <img src="${this.src}" class="img-fluid" alt="${this.alt}">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+                
+                modal.addEventListener('hidden.bs.modal', function() {
+                    modal.remove();
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

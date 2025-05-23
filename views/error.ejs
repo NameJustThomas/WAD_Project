@@ -1,0 +1,49 @@
+<!--
+ * Error Page
+ * Purpose: Display error messages to users
+ * Used by: errorHandler middleware
+ * Features:
+ * - Error message display
+ * - Error details (in development)
+ * - Back to home link
+ * - Error code display
+ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - <%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <div class="error-page">
+                    <h1 class="display-1 text-danger mb-4">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </h1>
+                    <h2 class="mb-4"><%= message %></h2>
+                    <% if (typeof error !== 'undefined' && error && Object.keys(error).length > 0) { %>
+                        <div class="alert alert-danger">
+                            <pre class="mb-0"><%= JSON.stringify(error, null, 2) %></pre>
+                        </div>
+                    <% } %>
+                    <div class="mt-4">
+                        <a href="/" class="btn btn-primary">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

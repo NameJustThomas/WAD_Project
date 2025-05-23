@@ -1,0 +1,157 @@
+<!--
+ * Shopping Cart Page
+ * Purpose: Display and manage shopping cart
+ * Used by: cartController.index
+ * Features:
+ * - Cart items list
+ * - Quantity adjustment
+ * - Price calculations
+ * - Checkout button
+ * - Save for later
+ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Online Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .cart-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-item img {
+            max-width: 100px;
+            height: auto;
+        }
+        .quantity-input {
+            width: 70px;
+        }
+        .cart-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .empty-cart {
+            text-align: center;
+            padding: 50px 0;
+        }
+        .empty-cart i {
+            font-size: 4rem;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <%- include('../partials/navbar') %>
+
+    <!-- Cart Section -->
+    <section class="cart-section py-5">
+        <div class="container">
+            <h1 class="text-center mb-5">Shopping Cart</h1>
+
+            <% if (cartItems.length === 0) { %>
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Your cart is empty</h3>
+                    <p class="text-muted">Add some products to your cart to see them here</p>
+                    <a href="/products" class="btn btn-primary mt-3">Continue Shopping</a>
+                </div>
+            <% } else { %>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% cartItems.forEach(item => { %>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="<%= item.image %>" alt="<%= item.name %>" class="img-thumbnail me-3" style="width: 80px;">
+                                                    <div>
+                                                        <h5 class="mb-0"><%= item.name %></h5>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>$<%= item.price %></td>
+                                            <td>
+                                                <div class="input-group" style="width: 120px;">
+                                                    <button class="btn btn-outline-secondary btn-sm" data-product-id="<%= item.productId %>" data-action="decrease">-</button>
+                                                    <input type="number" class="form-control form-control-sm text-center quantity-input" 
+                                                           value="<%= item.quantity %>" min="1" 
+                                                           data-product-id="<%= item.productId %>">
+                                                    <button class="btn btn-outline-secondary btn-sm" data-product-id="<%= item.productId %>" data-action="increase">+</button>
+                                                </div>
+                                            </td>
+                                            <td>$<%= item.total %></td>
+                                            <td>
+                                                <button class="btn btn-danger btn-sm" data-product-id="<%= item.productId %>" data-action="remove">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-danger" data-action="clear">
+                                    <i class="fas fa-trash me-2"></i>Clear Cart
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Order Summary</h5>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Subtotal:</span>
+                                            <span>$<%= subtotal %></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Shipping:</span>
+                                            <span>$<%= shipping %></span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <strong>Total:</strong>
+                                            <strong>$<%= total %></strong>
+                                        </div>
+                                        <a href="/checkout" class="btn btn-primary w-100">
+                                            Proceed to Checkout
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <%- include('../partials/footer') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/cart.js"></script>
+</body>
+</html> 
