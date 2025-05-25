@@ -9,6 +9,30 @@
  * - Utility classes
  */
 
+/* Font Style */
+ @font-face {
+    font-family: 'Jack Frost';
+    src: url('/fonts/JackFrost.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Integral CF';
+    src: url('/fonts/IntegralCF-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Integral CF';
+    src: url('/fonts/IntegralCF-Bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+
+
 /* Custom styles */
 :root {
     --primary-color: #007bff;
@@ -17,7 +41,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Integral CF', sans-serif;
 }
 
 /* Hero Section */
@@ -226,9 +250,9 @@ input[type="number"]::-webkit-outer-spin-button {
     margin: 0;
 }
 
-input[type="number"] {
+/* input[type="number"] {
     -moz-appearance: textfield;
-}
+} */
 
 /* Notifications */
 .notification {
