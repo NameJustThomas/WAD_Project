@@ -25,19 +25,46 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
     <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
   </head>
   <body>
     <!-- Navigation -->
     <%- include('partials/topbar') %> <%- include('partials/navbar') %>
 
     <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="container">
+    <section class="hero-section py-5">
+      <div class="hero-container mx-auto px-4 px-lg-5">
         <div class="row align-items-center min-vh-75">
-          <div class="col-md-6">
-            <h1 class="display-4 mb-4">Welcome to Our Online Shop</h1>
-            <p class="lead mb-4">Discover amazing products at great prices.</p>
-            <a href="/products" class="btn btn-primary btn-lg">Shop Now</a>
+          <div class="col-lg-6 text-center text-lg-start mb-4 mb-lg-0">
+            <h1 class="display-4 fw-bold mb-3">
+              FIND CLOTHES<br />THAT MATCHES<br />YOUR STYLE
+            </h1>
+            <p class="fw-bold mb-4" style="color: #616060">
+              BROWSE THROUGH OUR DIVERSE RANGE OF METICULOUSLY<br />
+              CRAFTED GARMENTS, DESIGNED TO BRING OUT YOUR<br />
+              INDIVIDUALITY AND CATER TO YOUR SENSE OF STYLE.
+            </p>
+
+            <a href="/products" class="btn btn-dark btn-lg px-4 rounded-pill"
+              >SHOP NOW</a
+            >
+            <div class="row mt-5 g-4 text-start fw-bold font-jack-frost">
+              <div class="col-4">
+                <h4 class="mb-0">200+</h4>
+                <p class="mb-0 small">INTERNATIONAL BRANDS</p>
+              </div>
+              <div class="col-4">
+                <h4 class="mb-0">2,000+</h4>
+                <p class="mb-0 small">HIGH-QUALITY PRODUCTS</p>
+              </div>
+              <div class="col-4">
+                <h4 class="mb-0">30,000+</h4>
+                <p class="mb-0 small">HAPPY CUSTOMERS</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6 text-center">
+            <img src="/images/models-hero.png" alt="Models" class="img-fluid" />
           </div>
         </div>
       </div>
@@ -121,10 +148,11 @@
 
     <!-- Footer -->
     <%- include('partials/footer') %>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Close signup banner
+      // Close signup banner
       function closeSignupBanner() {
         const banner = document.getElementById("signup-banner");
         if (banner) {
@@ -210,6 +238,9 @@
           }
         });
       });
+    </script>
+    <script>
+      lucide.createIcons();
     </script>
   </body>
 </html>
