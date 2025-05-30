@@ -20,16 +20,47 @@ DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS user_profiles;
+DROP TABLE IF EXISTS addresses;
 DROP TABLE IF EXISTS users;
 
--- Create users table
+-- Create users table (basic info only)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role ENUM('user', 'admin') DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    reset_token VARCHAR(255),
+    reset_token_expires DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Create user_profiles table (detailed info)
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create addresses table
+CREATE TABLE IF NOT EXISTS addresses (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    userId INT NOT NULL,
+    street VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    zipCode VARCHAR(20) NOT NULL,
+    isDefault BOOLEAN DEFAULT FALSE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create categories table
@@ -60,9 +91,11 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id INT NOT NULL,
     total_amount DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
-    shipping_address TEXT NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    address_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
 );
 
 -- Create order_items table
@@ -96,6 +129,11 @@ CREATE TABLE IF NOT EXISTS product_images (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+
+-- Add indexes
+CREATE INDEX idx_addresses_user_id ON addresses(userId);
+CREATE INDEX idx_addresses_is_default ON addresses(isDefault);
+CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
 
 -- Insert sample categories
 INSERT INTO categories (name, description) VALUES

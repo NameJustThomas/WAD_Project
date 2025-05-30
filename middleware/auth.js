@@ -113,6 +113,10 @@ const auth = async (req, res, next) => {
         if (!req.session || !req.session.user_id) {
             // Store the intended destination
             req.session.returnTo = req.originalUrl;
+            // If trying to access checkout, set checkout intent
+            if (req.originalUrl === '/checkout') {
+                req.session.checkoutIntent = true;
+            }
             return res.redirect('/auth/login');
         }
 

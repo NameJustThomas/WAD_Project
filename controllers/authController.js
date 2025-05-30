@@ -15,6 +15,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
+const crypto = require('crypto');
 
 // Show login page
 exports.showLogin = (req, res) => {
@@ -30,30 +32,14 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate input
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            req.flash('error', errors.array()[0].msg);
-            return res.redirect('/auth/login');
-        }
-
-        // Check if user exists
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (!users.length) {
+        // Validate user credentials
+        const user = await User.findByEmail(email);
+        if (!user || !await User.verifyPassword(password, user.password)) {
             req.flash('error', 'Invalid email or password');
             return res.redirect('/auth/login');
         }
 
-        const user = users[0];
-
-        // Check password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            req.flash('error', 'Invalid email or password');
-            return res.redirect('/auth/login');
-        }
-
-        // Set session and req.user
+        // Create session
         req.session.user_id = user.id;
         req.session.user = {
             id: user.id,
@@ -61,8 +47,6 @@ exports.login = async (req, res) => {
             email: user.email,
             role: user.role
         };
-        req.user = req.session.user; // Set req.user for auth middleware
-        res.locals.user = req.session.user;
 
         // Check if there was a checkout intent
         if (req.session.checkoutIntent) {
@@ -93,53 +77,54 @@ exports.showRegister = (req, res) => {
 // Handle registration
 exports.register = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
-
-        // Validate input
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             req.flash('error', errors.array()[0].msg);
             return res.redirect('/auth/register');
         }
 
-        // Check if user exists
-        const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (existingUsers.length) {
-            req.flash('error', 'This email is already registered');
+        const { username, email, password } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            req.flash('error', 'Email already registered');
             return res.redirect('/auth/register');
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        // Create new user
+        const userId = await User.create({
+            username,
+            email,
+            password,
+            role: 'user'
+        });
 
-        // Create user
-        const [result] = await pool.query(
-            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-            [username, email, hashedPassword, 'user']
-        );
-
-        // Set session
-        req.session.user_id = result.insertId;
+        // Create session
         req.session.user = {
-            id: result.insertId,
+            id: userId,
             username,
             email,
             role: 'user'
         };
 
+        req.flash('success', 'Registration successful!');
         res.redirect('/');
     } catch (error) {
         console.error('Error in register:', error);
-        req.flash('error', 'An error occurred during registration. Please try again.');
+        req.flash('error', 'An error occurred during registration');
         res.redirect('/auth/register');
     }
 };
 
 // Handle logout
 exports.logout = (req, res) => {
-    req.session.destroy();
-    res.redirect('/auth/login');
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Logout error:', err);
+        }
+        res.redirect('/');
+    });
 };
 
 // Show forgot password page
@@ -252,20 +237,20 @@ exports.resetPassword = async (req, res) => {
 };
 
 // Get login page
-exports.getLogin = (req, res, next) => {
+exports.getLogin = (req, res) => {
     res.render('auth/login', {
         title: 'Login',
-        errors: [],
-        formData: {}
+        error: req.flash('error'),
+        success: req.flash('success')
     });
 };
 
 // Get register page
-exports.getRegister = (req, res, next) => {
+exports.getRegister = (req, res) => {
     res.render('auth/register', {
         title: 'Register',
-        errors: [],
-        formData: {}
+        error: req.flash('error'),
+        success: req.flash('success')
     });
 };
 
@@ -286,5 +271,106 @@ exports.getCurrentUser = async (req, res) => {
     } catch (error) {
         console.error('Error in getCurrentUser:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Process login
+exports.postLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findByEmail(email);
+
+        if (!user || !(await User.verifyPassword(password, user.password))) {
+            req.flash('error', 'Invalid email or password');
+            return res.redirect('/auth/login');
+        }
+
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+        };
+
+        res.redirect('/');
+    } catch (error) {
+        console.error('Login error:', error);
+        req.flash('error', 'An error occurred during login');
+        res.redirect('/auth/login');
+    }
+};
+
+// Process forgot password
+exports.postForgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findByEmail(email);
+
+        if (!user) {
+            req.flash('error', 'No account found with that email');
+            return res.redirect('/auth/forgot-password');
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpires = Date.now() + 3600000; // 1 hour
+
+        await User.updateResetToken(user.id, resetToken, resetTokenExpires);
+
+        // Send reset email
+        // TODO: Implement email sending
+
+        req.flash('success', 'Password reset instructions sent to your email');
+        res.redirect('/auth/login');
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        req.flash('error', 'An error occurred while processing your request');
+        res.redirect('/auth/forgot-password');
+    }
+};
+
+// Show reset password page
+exports.getResetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const user = await User.findByResetToken(token);
+
+        if (!user || user.resetTokenExpires < Date.now()) {
+            req.flash('error', 'Invalid or expired reset token');
+            return res.redirect('/auth/forgot-password');
+        }
+
+        res.render('auth/reset-password', {
+            title: 'Reset Password',
+            token,
+            error: req.flash('error')
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        req.flash('error', 'An error occurred while processing your request');
+        res.redirect('/auth/forgot-password');
+    }
+};
+
+// Process reset password
+exports.postResetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        const user = await User.findByResetToken(token);
+
+        if (!user || user.resetTokenExpires < Date.now()) {
+            req.flash('error', 'Invalid or expired reset token');
+            return res.redirect('/auth/forgot-password');
+        }
+
+        await User.updatePassword(user.id, password);
+        await User.clearResetToken(user.id);
+
+        req.flash('success', 'Password has been reset successfully');
+        res.redirect('/auth/login');
+    } catch (error) {
+        console.error('Reset password error:', error);
+        req.flash('error', 'An error occurred while resetting your password');
+        res.redirect('/auth/forgot-password');
     }
 }; 

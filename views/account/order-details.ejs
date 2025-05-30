@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<%- include('../partials/navbar') %>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Order #<%= order.id %></h2>
+                <a href="/account/orders" class="btn btn-outline-secondary">Back to Orders</a>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Order Items -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Order Items</h5>
+                        </div>
+                        <div class="card-body">
+                            <% order.items.forEach(item => { %>
+                                <div class="d-flex mb-3">
+                                    <img src="<%= item.product.image %>" alt="<%= item.product.name %>" 
+                                         class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                                    <div class="ms-3">
+                                        <h6 class="mb-1"><%= item.product.name %></h6>
+                                        <p class="mb-1">Quantity: <%= item.quantity %></p>
+                                        <p class="mb-0">Price: $<%= parseFloat(item.price).toFixed(2) %></p>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <!-- Order Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Order Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Status:</span>
+                                <span class="badge bg-<%= order.status === 'completed' ? 'success' : 
+                                                  order.status === 'processing' ? 'primary' : 
+                                                  order.status === 'cancelled' ? 'danger' : 'secondary' %>">
+                                    <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Order Date:</span>
+                                <span><%= new Date(order.created_at).toLocaleDateString() %></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Payment Method:</span>
+                                <span><%= order.paymentMethod %></span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span>$<%= parseFloat(order.total).toFixed(2) %></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Shipping:</span>
+                                <span>Free</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <strong>Total:</strong>
+                                <strong>$<%= parseFloat(order.total).toFixed(2) %></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Shipping Address</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-1"><%= order.address.street %></p>
+                            <p class="mb-1"><%= order.address.city %>, <%= order.address.state %> <%= order.address.zipCode %></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="/js/main.js"></script>
+</body>
+</html> 

@@ -78,7 +78,7 @@ exports.index = async (req, res) => {
 
         // Ensure orderStats has default values
         const safeOrderStats = {
-            totalRevenue: orderStats?.totalRevenue || 0,
+            totalRevenue: parseFloat(orderStats?.totalRevenue || 0),
             pendingOrders: orderStats?.pendingOrders || 0,
             completedOrders: orderStats?.completedOrders || 0
         };
@@ -139,6 +139,13 @@ exports.getProducts = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
+        // Handle image upload
+        if (req.file) {
+            req.body.image_url = `/images/products/${req.file.filename}`;
+        } else {
+            req.body.image_url = '/images/products/no-image.jpg';
+        }
+
         const errors = await Product.validate(req.body);
         if (errors) {
             return res.status(400).json({ errors });
@@ -408,45 +415,38 @@ exports.getOrders = async (req, res) => {
 exports.updateOrder = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const { status } = req.body;
+
+        console.log('Received update request:', { id, status });
+
+        if (!id || !status) {
+            console.log('Missing required fields:', { id, status });
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID and status are required'
+            });
+        }
 
         // Update the order
-        const success = await Order.updateStatus(parseInt(id), updateData.status);
+        const success = await Order.updateStatus(parseInt(id), status);
+        console.log('Update result:', success);
+
         if (!success) {
-            if (req.xhr || req.headers.accept.includes('application/json')) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Order not found'
-                });
-            }
-            return res.status(404).render('error', {
-                title: 'Error',
-                message: 'Order not found'
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found or update failed'
             });
         }
 
-        // Send response based on request type
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.json({
-                success: true,
-                message: 'Order updated successfully'
-            });
-        }
-        
-        req.flash('success', 'Order updated successfully');
-        res.redirect('/admin/orders');
+        return res.json({
+            success: true,
+            message: 'Order updated successfully'
+        });
     } catch (error) {
         console.error('Error in updateOrder:', error);
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.status(500).json({
-                success: false,
-                message: 'Error updating order'
-            });
-        }
-        res.status(500).render('error', {
-            title: 'Error',
-            message: 'Error updating order',
-            error: process.env.NODE_ENV === 'development' ? error : {}
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Error updating order'
         });
     }
 };
@@ -586,15 +586,15 @@ exports.analytics = async (req, res) => {
         // Format data for display
         const formattedData = {
             totalOrders: totalSales.total_orders || 0,
-            totalRevenue: (totalSales.total_revenue || 0).toFixed(2),
-            averageOrderValue: (totalSales.average_order_value || 0).toFixed(2),
+            totalRevenue: parseFloat(totalSales.total_revenue || 0).toFixed(2),
+            averageOrderValue: parseFloat(totalSales.average_order_value || 0).toFixed(2),
             monthlySales: formattedMonthlySales,
             topProducts: formattedTopProducts,
             recentOrders: recentOrders.map(order => ({
                 id: order.id,
                 customer: order.customer_name || 'Guest',
                 date: new Date(order.created_at).toLocaleDateString(),
-                amount: (order.total_amount || 0).toFixed(2),
+                amount: parseFloat(order.total_amount || 0).toFixed(2),
                 status: order.status,
                 items: order.item_count || 0,
                 products: order.product_names || 'No products'
@@ -608,8 +608,9 @@ exports.analytics = async (req, res) => {
     } catch (error) {
         console.error('Error in analytics:', error);
         res.status(500).render('error', {
+            title: 'Error',
             message: 'Error loading analytics data',
-            error: error
+            error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
 };
@@ -964,6 +965,51 @@ exports.getProductImages = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error getting product images'
+        });
+    }
+};
+
+// Get order details
+exports.getOrderDetails = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+
+        // Get order
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Get order items
+        const orderItems = await OrderItem.findByOrderId(orderId);
+
+        // Format data
+        const formattedOrder = {
+            ...order,
+            formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
+            formatted_date: new Date(order.created_at).toLocaleDateString(),
+            shipping_address: JSON.parse(order.shipping_address || '{}')
+        };
+
+        const formattedItems = orderItems.map(item => ({
+            ...item,
+            formatted_price: parseFloat(item.price || 0).toFixed(2),
+            formatted_total: (parseFloat(item.price || 0) * item.quantity).toFixed(2)
+        }));
+
+        res.json({
+            success: true,
+            order: formattedOrder,
+            items: formattedItems
+        });
+    } catch (error) {
+        console.error('Error in getOrderDetails:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading order details'
         });
     }
 };

@@ -84,6 +84,7 @@ const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
 const ordersRouter = require('./routes/orders');
 const checkoutRouter = require('./routes/checkout');
+const accountRouter = require('./routes/account');
 
 // Use routes
 app.use('/', homeRouter);
@@ -94,6 +95,7 @@ app.use('/admin', adminRouter);
 app.use('/auth', authRouter);
 app.use('/orders', ordersRouter);
 app.use('/checkout', checkoutRouter);
+app.use('/account', accountRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

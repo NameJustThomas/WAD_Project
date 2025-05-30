@@ -198,14 +198,17 @@ exports.clearCart = async (req, res) => {
 // Checkout
 exports.checkout = async (req, res) => {
     try {
-        const userId = req.user ? req.user.id : null;
+        const userId = req.session.user_id;
         const sessionCart = req.session.cart || [];
 
         if (!userId) {
             // Store checkout intent in session
             req.session.checkoutIntent = true;
+            req.session.returnTo = '/checkout';
             return res.json({
-                redirect: '/auth/login'
+                success: false,
+                redirect: '/auth/login',
+                message: 'Please login to continue checkout'
             });
         }
 
@@ -217,11 +220,15 @@ exports.checkout = async (req, res) => {
 
         // Redirect to checkout page
         res.json({
+            success: true,
             redirect: '/checkout'
         });
     } catch (error) {
         console.error('Error in checkout:', error);
-        res.status(500).json({ success: false, message: 'Error processing checkout' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error processing checkout' 
+        });
     }
 };
 

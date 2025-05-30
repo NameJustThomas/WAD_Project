@@ -10,25 +10,70 @@
 const pool = require('../config/database');
 
 class Order {
+    constructor(id, userId, totalAmount, status, paymentMethod, addressId, createdAt) {
+        this.id = id;
+        this.userId = userId;
+        this.totalAmount = totalAmount;
+        this.status = status;
+        this.paymentMethod = paymentMethod;
+        this.addressId = addressId;
+        this.created_at = createdAt;
+    }
+
     static async findById(id) {
-        const [orders] = await pool.query(`
-            SELECT o.*, u.username as user_name
-            FROM orders o
-            LEFT JOIN users u ON o.user_id = u.id
-            WHERE o.id = ?
-        `, [parseInt(id)]);
-        return orders.length ? orders[0] : null;
+        try {
+            // Get order details
+            const [orders] = await pool.query(
+                'SELECT * FROM orders WHERE id = ?',
+                [id]
+            );
+
+            if (!orders.length) return null;
+
+            const order = orders[0];
+
+            // Get order items with product details
+            const [items] = await pool.query(
+                `SELECT oi.*, p.name as product_name, p.image_url as product_image 
+                 FROM order_items oi 
+                 JOIN products p ON oi.product_id = p.id 
+                 WHERE oi.order_id = ?`,
+                [id]
+            );
+
+            // Get shipping address
+            const [addresses] = await pool.query(
+                'SELECT * FROM addresses WHERE id = ?',
+                [order.address_id]
+            );
+
+            return {
+                ...order,
+                items: items.map(item => ({
+                    ...item,
+                    product: {
+                        name: item.product_name,
+                        image: item.product_image
+                    }
+                })),
+                address: addresses[0]
+            };
+        } catch (error) {
+            console.error('Error in findById:', error);
+            throw error;
+        }
     }
 
     static async findByUserId(userId) {
-        const [orders] = await pool.query(`
-            SELECT o.*, u.username as user_name
-            FROM orders o
-            LEFT JOIN users u ON o.user_id = u.id
-            WHERE o.user_id = ?
-            ORDER BY o.created_at DESC
-        `, [parseInt(userId)]);
-        return orders;
+        try {
+            const [orders] = await pool.query(
+                'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
+                [userId]
+            );
+            return orders;
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async findAll() {
@@ -151,31 +196,87 @@ class Order {
     static async create(orderData) {
         const connection = await pool.getConnection();
         try {
+            console.log('Creating order with data:', orderData);
+
+            // Validate required fields
+            if (!orderData.userId || !orderData.addressId || !orderData.totalAmount || !orderData.items) {
+                throw new Error('Missing required order data');
+            }
+
+            // Validate items
+            if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+                throw new Error('Order must contain at least one item');
+            }
+
+            // Start transaction
             await connection.beginTransaction();
 
-            // Insert order
-            const [orderResult] = await connection.query(
-                `INSERT INTO orders (
-                    user_id,
-                    total_amount,
-                    shipping_address,
-                    payment_method,
-                    status
-                ) VALUES (?, ?, ?, ?, ?)`,
-                [
-                    orderData.userId,
-                    orderData.totalAmount,
-                    JSON.stringify(orderData.shippingAddress),
-                    orderData.paymentMethod,
-                    orderData.status
-                ]
-            );
+            try {
+                // Create order
+                const [orderResult] = await connection.query(
+                    'INSERT INTO orders (user_id, total_amount, status, payment_method, address_id) VALUES (?, ?, ?, ?, ?)',
+                    [
+                        orderData.userId,
+                        orderData.totalAmount,
+                        orderData.status || 'pending',
+                        orderData.paymentMethod,
+                        orderData.addressId
+                    ]
+                );
 
-            const orderId = orderResult.insertId;
-            await connection.commit();
-            return orderId;
+                const orderId = orderResult.insertId;
+                console.log(`Created order ${orderId} for user ${orderData.userId}`);
+
+                // Create order items and update product stock
+                for (const item of orderData.items) {
+                    // Validate item data
+                    if (!item.productId || !item.quantity || !item.price) {
+                        throw new Error('Invalid item data');
+                    }
+
+                    // Check product stock
+                    const [products] = await connection.query(
+                        'SELECT stock FROM products WHERE id = ?',
+                        [item.productId]
+                    );
+
+                    if (!products.length) {
+                        throw new Error(`Product ${item.productId} not found`);
+                    }
+
+                    if (products[0].stock < item.quantity) {
+                        throw new Error(`Insufficient stock for product ${item.productId}`);
+                    }
+
+                    // Create order item
+                    await connection.query(
+                        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+                        [orderId, item.productId, item.quantity, item.price]
+                    );
+
+                    // Update product stock
+                    await connection.query(
+                        'UPDATE products SET stock = stock - ? WHERE id = ?',
+                        [item.quantity, item.productId]
+                    );
+
+                    console.log(`Added item ${item.productId} to order ${orderId}`);
+                }
+
+                // Commit transaction
+                await connection.commit();
+                console.log(`Order ${orderId} created successfully`);
+
+                // Return the created order
+                return await this.findById(orderId);
+            } catch (error) {
+                // Rollback transaction on error
+                await connection.rollback();
+                console.error('Error creating order:', error);
+                throw error;
+            }
         } catch (error) {
-            await connection.rollback();
+            console.error('Error in order creation:', error);
             throw error;
         } finally {
             connection.release();
@@ -183,11 +284,45 @@ class Order {
     }
 
     static async updateStatus(id, status) {
-        const [result] = await pool.query(
-            'UPDATE orders SET status = ? WHERE id = ?',
-            [status, parseInt(id)]
-        );
-        return result.affectedRows > 0;
+        const connection = await pool.getConnection();
+        try {
+            console.log('Updating order status:', { id, status });
+
+            // Validate status
+            const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+            if (!validStatuses.includes(status)) {
+                throw new Error(`Invalid order status: ${status}`);
+            }
+
+            // Check if order exists
+            const [orders] = await connection.query(
+                'SELECT id FROM orders WHERE id = ?',
+                [id]
+            );
+
+            if (!orders.length) {
+                throw new Error(`Order not found with ID: ${id}`);
+            }
+
+            // Update status
+            const [result] = await connection.query(
+                'UPDATE orders SET status = ? WHERE id = ?',
+                [status, id]
+            );
+
+            console.log('Update result:', result);
+
+            if (result.affectedRows === 0) {
+                throw new Error('Failed to update order status');
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error in updateStatus:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

@@ -79,11 +79,11 @@
                                     <td>
                                         <div class="btn-group">
                                             <button class="btn btn-sm btn-info" 
-                                                    onclick="editProduct(<%= product.id %>)">
+                                                    onclick="editProduct('<%= product.id %>')">
                                                 Edit
                                                     </button>
                                             <button class="btn btn-sm btn-danger" 
-                                                    onclick="deleteProduct(<%= product.id %>)">
+                                                    onclick="deleteProduct('<%= product.id %>')">
                                                 Delete
                                                     </button>
                                         </div>
@@ -106,7 +106,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addProductForm">
+                    <form id="addProductForm" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -114,6 +114,11 @@
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
                             <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Product Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            <small class="text-muted">Upload a product image (JPG, PNG, GIF up to 5MB)</small>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -123,7 +128,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
+                        <div class="mb-3">
                                     <label for="discount_price" class="form-label">Discount Price</label>
                                     <input type="number" class="form-control" id="discount_price" name="discount_price" step="0.01">
                                 </div>
@@ -134,19 +139,19 @@
                                 <div class="mb-3">
                                     <label for="category_id" class="form-label">Category</label>
                                     <select class="form-select" id="category_id" name="category_id" required>
-                                <option value="">Select Category</option>
-                                    <% categories.forEach(category => { %>
-                                        <option value="<%= category.id %>"><%= category.name %></option>
-                                    <% }); %>
-                            </select>
-                        </div>
+                                        <option value="">Select Category</option>
+                                        <% categories.forEach(category => { %>
+                                            <option value="<%= category.id %>"><%= category.name %></option>
+                                        <% }); %>
+                                    </select>
+                                </div>
                             </div>
                             <div class="col-md-6">
                         <div class="mb-3">
                                     <label for="stock" class="form-label">Stock</label>
                                     <input type="number" class="form-control" id="stock" name="stock" required>
-                        </div>
-                        </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -234,6 +239,49 @@
                 const form = document.getElementById('addProductForm');
                 const formData = new FormData(form);
                 
+                // Validate required fields
+                const requiredFields = ['name', 'price', 'category_id', 'stock'];
+                for (const field of requiredFields) {
+                    if (!formData.get(field)) {
+                        throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+                    }
+                }
+
+                // Validate price and discount price
+                const price = parseFloat(formData.get('price'));
+                const discountPrice = formData.get('discount_price') ? parseFloat(formData.get('discount_price')) : null;
+                
+                if (isNaN(price) || price <= 0) {
+                    throw new Error('Price must be greater than 0');
+                }
+                
+                if (discountPrice !== null) {
+                    if (isNaN(discountPrice) || discountPrice <= 0) {
+                        throw new Error('Discount price must be greater than 0');
+                    }
+                    if (discountPrice >= price) {
+                        throw new Error('Discount price must be less than regular price');
+                    }
+                }
+
+                // Validate stock
+                const stock = parseInt(formData.get('stock'));
+                if (isNaN(stock) || stock < 0) {
+                    throw new Error('Stock must be a non-negative number');
+                }
+
+                // Validate image if provided
+                const image = formData.get('image');
+                if (image && image.size > 0) {
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                    if (!allowedTypes.includes(image.type)) {
+                        throw new Error('Invalid image format. Please upload JPG, PNG or GIF');
+                    }
+                    if (image.size > 5 * 1024 * 1024) { // 5MB limit
+                        throw new Error('Image size must be less than 5MB');
+                    }
+                }
+                
                 const response = await fetch('/admin/products', {
                     method: 'POST',
                     body: formData
@@ -242,14 +290,23 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+                    modal.hide();
+                    form.reset();
+                    
                     alert('Product created successfully');
                     location.reload();
                 } else {
-                    alert('Error creating product: ' + data.message);
+                    if (data.errors) {
+                        const errorMessages = Object.values(data.errors).join('\n');
+                        throw new Error(errorMessages);
+                    }
+                    throw new Error(data.message || 'Failed to create product');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error creating product');
+                alert(error.message || 'Error creating product');
             }
         }
 

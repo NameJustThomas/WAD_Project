@@ -31,9 +31,81 @@
         .sidebar a:hover {
             color: #17a2b8;
         }
+
+        /* Status styles */
+        .status-select {
+            font-weight: 500;
+            border-radius: 4px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-select option {
+            padding: 8px;
+        }
+
+        /* Status colors */
+        .status-select option[value="pending"] {
+            color: #ffc107;
+            background-color: #fff3cd;
+        }
+
+        .status-select option[value="processing"] {
+            color: #0dcaf0;
+            background-color: #cff4fc;
+        }
+
+        .status-select option[value="shipped"] {
+            color: #0d6efd;
+            background-color: #cfe2ff;
+        }
+
+        .status-select option[value="delivered"] {
+            color: #198754;
+            background-color: #d1e7dd;
+        }
+
+        .status-select option[value="cancelled"] {
+            color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+        /* Selected status styles */
+        .status-select[data-status="pending"] {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .status-select[data-status="processing"] {
+            background-color: #cff4fc;
+            border-color: #0dcaf0;
+            color: #055160;
+        }
+
+        .status-select[data-status="shipped"] {
+            background-color: #cfe2ff;
+            border-color: #0d6efd;
+            color: #084298;
+        }
+
+        .status-select[data-status="delivered"] {
+            background-color: #d1e7dd;
+            border-color: #198754;
+            color: #0f5132;
+        }
+
+        .status-select[data-status="cancelled"] {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #842029;
+        }
     </style>
 </head>
 <body>
+    <%- include('../partials/navbar') %>
     <div class="container-fluid">
         <div class="row">
             <%- include('partials/sidebar', { path: '/admin/orders' }) %>
@@ -65,7 +137,9 @@
                                                 <td><%= order.user_name || 'Guest' %></td>
                                                 <td>$<%= order.formatted_amount %></td>
                                                 <td>
-                                                    <select class="form-select form-select-sm status-select" data-order-id="<%= order.id %>">
+                                                    <select class="form-select form-select-sm status-select" 
+                                                            data-order-id="<%= order.id %>"
+                                                            data-status="<%= order.status %>">
                                                         <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pending</option>
                                                         <option value="processing" <%= order.status === 'processing' ? 'selected' : '' %>>Processing</option>
                                                         <option value="shipped" <%= order.status === 'shipped' ? 'selected' : '' %>>Shipped</option>
@@ -95,29 +169,46 @@
         </div>
     </div>
 
-    <!-- Order Items Modal -->
-    <div class="modal fade" id="orderItemsModal" tabindex="-1">
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Order Items</h5>
+                    <h5 class="modal-title">Order Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderItemsBody">
-                            </tbody>
-                        </table>
+                    <div class="order-info mb-4">
+                        <h6>Order Information</h6>
+                        <p><strong>Order ID:</strong> <span id="modal-order-id"></span></p>
+                        <p><strong>Date:</strong> <span id="modal-order-date"></span></p>
+                        <p><strong>Total Amount:</strong> <span id="modal-order-amount"></span></p>
+                        <p><strong>Status:</strong> <span id="modal-order-status"></span></p>
                     </div>
+                    <div class="shipping-info mb-4">
+                        <h6>Shipping Information</h6>
+                        <div id="modal-shipping-address"></div>
+                    </div>
+                    <div class="order-items">
+                        <h6>Order Items</h6>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-order-items">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -127,28 +218,41 @@
     <script>
         // Handle status change
         document.querySelectorAll('.status-select').forEach(select => {
+            // Update select style based on current status
+            select.dataset.status = select.value;
+
             select.addEventListener('change', async function() {
                 const orderId = this.dataset.orderId;
                 const newStatus = this.value;
+                const originalValue = this.value;
                 
                 try {
-                    const response = await fetch(`/admin/orders/${orderId}/status`, {
+                    console.log('Updating order status:', { orderId, newStatus });
+                    
+                    const response = await fetch(`/admin/orders/${orderId}`, {
                         method: 'PUT',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({ status: newStatus })
                     });
                     
+                    const data = await response.json();
+                    console.log('Server response:', data);
+                    
                     if (response.ok) {
+                        // Update select style after successful update
+                        this.dataset.status = newStatus;
                         alert('Order status updated successfully');
                     } else {
-                        throw new Error('Failed to update order status');
+                        throw new Error(data.message || 'Failed to update order status');
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error updating order status');
-                    this.value = this.dataset.originalValue;
+                    console.error('Error details:', error);
+                    alert('Error updating order status: ' + error.message);
+                    this.value = originalValue;
+                    this.dataset.status = originalValue;
                 }
             });
         });
@@ -157,25 +261,55 @@
         document.querySelectorAll('.view-items').forEach(button => {
             button.addEventListener('click', async function() {
                 const orderId = this.dataset.orderId;
+                console.log('Viewing items for order:', orderId);
                 
                 try {
-                    const response = await fetch(`/admin/orders/${orderId}/items`);
-                    const items = await response.json();
+                    const response = await fetch(`/admin/orders/${orderId}`);
+                    console.log('Response status:', response.status);
                     
-                    const itemsHtml = items.map(item => `
-                        <tr>
-                            <td>${item.product_name || 'N/A'}</td>
-                            <td>${item.quantity || 0}</td>
-                            <td>$${item.formatted_price || '0.00'}</td>
-                            <td>$${item.formatted_total || '0.00'}</td>
-                        </tr>
-                    `).join('');
+                    const data = await response.json();
+                    console.log('Response data:', data);
                     
-                    document.getElementById('orderItemsBody').innerHTML = itemsHtml;
-                    new bootstrap.Modal(document.getElementById('orderItemsModal')).show();
+                    if (data.success) {
+                        const { order, items } = data;
+                        
+                        // Update order information
+                        document.getElementById('modal-order-id').textContent = order.id;
+                        document.getElementById('modal-order-date').textContent = order.formatted_date;
+                        document.getElementById('modal-order-amount').textContent = `$${order.formatted_amount}`;
+                        document.getElementById('modal-order-status').textContent = order.status;
+                        
+                        // Update shipping address
+                        const shippingAddress = order.shipping_address;
+                        document.getElementById('modal-shipping-address').innerHTML = `
+                            <p><strong>Name:</strong> ${shippingAddress.firstName} ${shippingAddress.lastName}</p>
+                            <p><strong>Email:</strong> ${shippingAddress.email}</p>
+                            <p><strong>Address:</strong> ${shippingAddress.address}</p>
+                            <p><strong>City:</strong> ${shippingAddress.city}</p>
+                            <p><strong>State:</strong> ${shippingAddress.state}</p>
+                            <p><strong>ZIP Code:</strong> ${shippingAddress.zipCode}</p>
+                        `;
+                        
+                        // Update order items
+                        const itemsHtml = items.map(item => `
+                            <tr>
+                                <td>${item.product_name}</td>
+                                <td>$${item.formatted_price}</td>
+                                <td>${item.quantity}</td>
+                                <td>$${item.formatted_total}</td>
+                            </tr>
+                        `).join('');
+                        document.getElementById('modal-order-items').innerHTML = itemsHtml;
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+                        modal.show();
+                    } else {
+                        throw new Error(data.message || 'Failed to load order details');
+                    }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error loading order items');
+                    console.error('Error loading order details:', error);
+                    alert('Error loading order details: ' + error.message);
                 }
             });
         });

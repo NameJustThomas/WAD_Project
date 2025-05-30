@@ -132,9 +132,9 @@
                                         <strong>Total:</strong>
                                         <strong>$<%= total %></strong>
                                     </div>
-                                    <a href="/checkout" class="btn btn-primary w-100" id="checkoutBtn">
+                                    <button class="btn btn-primary w-100" id="checkoutBtn">
                                         Proceed to Checkout
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -244,59 +244,59 @@
         });
 
         // Clear cart
-        document.querySelector('[data-action="clear"]').addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            if (!confirm('Are you sure you want to clear your cart?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/cart/clear', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
+        const clearCartBtn = document.querySelector('[data-action="clear"]');
+        if (clearCartBtn) {
+            clearCartBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
                 
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    throw new Error(data.message);
+                if (!confirm('Are you sure you want to clear your cart?')) {
+                    return;
                 }
-            } catch (error) {
-                alert(error.message);
-            }
-        });
+
+                try {
+                    const response = await fetch('/cart/clear', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+        }
 
         // Checkout button
         document.getElementById('checkoutBtn').addEventListener('click', async (e) => {
             e.preventDefault();
             
             try {
-                const response = await fetch('/checkout', {
-                    method: 'GET',
+                const response = await fetch('/cart/checkout', {
+                    method: 'POST',
                     headers: {
                         'Accept': 'application/json'
                     }
                 });
 
-                if (response.redirected) {
-                    window.location.href = response.url;
+                const data = await response.json();
+                
+                if (data.redirect) {
+                    window.location.href = data.redirect;
                 } else {
-                    const data = await response.json();
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        window.location.href = '/checkout';
-                    }
+                    window.location.href = '/checkout';
                 }
             } catch (error) {
                 console.error('Checkout error:', error);
-                window.location.href = '/checkout';
+                alert('An error occurred during checkout. Please try again.');
             }
         });
     </script>

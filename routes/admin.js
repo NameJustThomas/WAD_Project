@@ -44,6 +44,7 @@ router.delete('/categories/:id', adminController.deleteCategory);
 
 // Order management
 router.get('/orders', adminController.getOrders);
+router.get('/orders/:id', adminController.getOrderDetails);
 router.put('/orders/:id', adminController.updateOrder);
 
 // User management

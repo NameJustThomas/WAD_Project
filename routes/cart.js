@@ -25,7 +25,7 @@ router.put('/update/:productId', (req, res) => cartController.updateQuantity(req
 router.delete('/remove/:productId', (req, res) => cartController.removeItem(req, res));
 router.delete('/clear', (req, res) => cartController.clearCart(req, res));
 
-// Checkout - yêu cầu auth
-router.post('/checkout', auth, (req, res) => cartController.checkout(req, res));
+// Checkout - không yêu cầu auth để cho phép chuyển hướng đến trang đăng nhập
+router.post('/checkout', (req, res) => cartController.checkout(req, res));
 
 module.exports = router; 
