@@ -625,3 +625,40 @@ footer {
     font-weight: 600;
     text-decoration: none;
 }
+
+.scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+  scroll-snap-type: x mandatory;
+}
+.scroll-container::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
+.feedback-card {
+  min-width: 240px;
+  max-width: 400px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 28px 32px;
+  transition: all 0.3s ease;
+  scroll-snap-align: center;
+  cursor: pointer;
+  opacity: 0.3;
+  filter: blur(4px);
+}
+
+.feedback-card.active {
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.feedback-card.blurred {
+  filter: blur(2px);
+}
+
+/* your existing verified-dot and feedback-text styles */
