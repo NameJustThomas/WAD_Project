@@ -11,7 +11,6 @@
 
     <!-- Collapsible Content -->
     <div class="collapse navbar-collapse justify-content-between" id="mainNavbarContent">
-
       <!-- Centered Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4 text-uppercase fw-semibold">
         <li class="nav-item dropdown">
@@ -38,7 +37,6 @@
 
       <!-- Right Section: Search + Icons -->
       <div class="d-flex align-items-center gap-3">
-
         <!-- Search Bar -->
         <form class="d-none d-lg-block flex-grow-1" action="/products" method="GET">
           <div class="input-group input-group-sm bg-light rounded-pill overflow-hidden w-100" style="max-width: 500px;">
@@ -86,3 +84,74 @@
     </div>
   </div>
 </nav>
+
+<!-- Navbar Script -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+
+  // Close signup banner
+  function closeSignupBanner() {
+    const banner = document.getElementById("signup-banner");
+    if (banner) banner.style.display = "none";
+  }
+
+  // Add to Cart
+  document.querySelectorAll(".add-to-cart").forEach((button) => {
+    button.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const productId = e.target.closest(".add-to-cart").dataset.productId;
+      const quantity = 1;
+
+      button.classList.add("loading");
+      const originalContent = button.innerHTML;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+      try {
+        const res = await fetch(`/cart/add/${productId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ quantity }),
+        });
+
+        const data = await res.json();
+
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+
+        if (data.success) {
+          document.querySelector(".cart-count").textContent = data.cartCount;
+          showToast("Success", data.message);
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (err) {
+        showToast("Error", err.message, true);
+      } finally {
+        button.classList.remove("loading");
+        button.innerHTML = originalContent;
+      }
+    });
+  });
+
+  // Toast helper
+  function showToast(title, message, isError = false) {
+    const toast = document.createElement("div");
+    toast.className = `toast show position-fixed bottom-0 end-0 m-3 ${
+      isError ? "bg-danger text-white" : ""
+    }`;
+    toast.innerHTML = `
+      <div class="toast-header">
+        <strong class="me-auto">${title}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">${message}</div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+</script>

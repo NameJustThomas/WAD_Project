@@ -20,7 +20,8 @@
 
   <body>
     <!-- Topbar & Navbar -->
-    <%- include('partials/topbar') %> <%- include('partials/navbar') %>
+    <%- include('partials/topbar') %> 
+    <%- include('partials/navbar') %>
 
     <!-- Hero Section -->
     <section class="hero-section py-5">
@@ -195,75 +196,6 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
 
-      // Close signup banner
-      function closeSignupBanner() {
-        const banner = document.getElementById("signup-banner");
-        if (banner) banner.style.display = "none";
-      }
-
-      // Add to Cart
-      document.querySelectorAll(".add-to-cart").forEach((button) => {
-        button.addEventListener("click", async (e) => {
-          e.preventDefault();
-          const productId = e.target.closest(".add-to-cart").dataset.productId;
-          const quantity = 1;
-
-          button.classList.add("loading");
-          const originalContent = button.innerHTML;
-          button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-          try {
-            const res = await fetch(`/cart/add/${productId}`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify({ quantity }),
-            });
-
-            const data = await res.json();
-
-            if (data.redirect) {
-              window.location.href = data.redirect;
-              return;
-            }
-
-            if (data.success) {
-              document.querySelector(".cart-count").textContent =
-                data.cartCount;
-              showToast("Success", data.message);
-            } else {
-              throw new Error(data.message);
-            }
-          } catch (err) {
-            showToast("Error", err.message, true);
-          } finally {
-            button.classList.remove("loading");
-            button.innerHTML = originalContent;
-          }
-        });
-      });
-
-      // Toast helper
-      function showToast(title, message, isError = false) {
-        const toast = document.createElement("div");
-        toast.className = `toast show position-fixed bottom-0 end-0 m-3 ${
-          isError ? "bg-danger text-white" : ""
-        }`;
-        toast.innerHTML = `
-          <div class="toast-header">
-            <strong class="me-auto">${title}</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-          </div>
-          <div class="toast-body">${message}</div>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-      }
-    </script>
   </body>
 </html>

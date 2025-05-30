@@ -21,6 +21,11 @@
   font-family: "Jack Frost", sans-serif;
 }
 
+.font-segoe-ui {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+
 @font-face {
   font-family: "Integral CF";
   src: url("/fonts/IntegralCF-Regular.otf") format("opentype");
@@ -586,4 +591,37 @@ footer {
   margin: 1rem;
   font-weight: bold;
   color: black;
+}
+
+/* style.css */
+
+/* Register button: black background, white text, rounded corners */
+.btn-register {
+    background-color: black !important; /* override bootstrap */
+    color: white !important;
+    border-radius: 30px !important; /* more rounded corners */
+    transition: background-color 0.3s ease;
+}
+
+.btn-register:hover {
+    background-color: #222 !important; /* slightly lighter black */
+    color: white !important;
+}
+
+/* Login link color black and hover effect */
+.login-link {
+    color: black !important;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-link:hover {
+    color: #444 !important;
+    text-decoration: underline;
+}
+
+.login-section a {
+    color: black !important;
+    font-weight: 600;
+    text-decoration: none;
 }

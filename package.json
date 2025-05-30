@@ -15,7 +15,7 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "connect-flash": "^0.1.1",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.5.0",
     "ejs": "^3.1.9",
     "express": "^4.18.3",
     "express-session": "^1.18.1",
@@ -24,6 +24,7 @@
     "lucide": "^0.511.0",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
+    "nodemailer": "^7.0.3",
     "online-shop": "file:",
     "sequelize": "^6.37.7"
   },
