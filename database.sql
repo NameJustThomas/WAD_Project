@@ -103,3 +103,7 @@ INSERT INTO products (name, description, price, stock, category_id, image_url) V
 ('Textbook', 'Educational textbook', 49.99, 150, 3, '/images/products/textbook.jpg'),
 ('Plant Pot', 'Decorative ceramic plant pot', 24.99, 60, 4, '/images/products/plantpot.jpg'),
 ('Garden Tools', 'Set of essential garden tools', 39.99, 40, 4, '/images/products/gardentools.jpg');
+
+ALTER TABLE users
+ADD COLUMN reset_token VARCHAR(255) NULL,
+ADD COLUMN reset_token_expires DATETIME NULL;
