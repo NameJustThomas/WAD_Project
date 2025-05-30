@@ -1,0 +1,119 @@
+<!--
+ * User Order Details Page
+ * Purpose: Display order details
+ * Used by: orderController.getOrderDetails
+ * Features:
+ * - Order information
+ * - Order items list
+ * - Order status
+ * - Shipping details
+ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Online Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-8">
+                <h2 class="mb-4">Order #<%= order.id %></h2>
+                
+                <!-- Order Status -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Status</h5>
+                        <p class="card-text">
+                            <span class="badge bg-<%= 
+                                order.status === 'completed' ? 'success' : 
+                                order.status === 'cancelled' ? 'danger' : 
+                                'warning' 
+                            %>">
+                                <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Items</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% items.forEach(item => { %>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <% if (item.image) { %>
+                                                        <img src="<%= item.image %>" alt="<%= item.product_name %>" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <% } %>
+                                                    <%= item.product_name %>
+                                                </div>
+                                            </td>
+                                            <td><%= item.quantity %></td>
+                                            <td>$<%= item.formatted_price %></td>
+                                            <td>$<%= item.formatted_total %></td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                        <td><strong>$<%= order.formatted_amount %></strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Order Summary -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Summary</h5>
+                        <p><strong>Order Date:</strong> <%= order.formatted_date %></p>
+                        <p><strong>Order ID:</strong> #<%= order.id %></p>
+                        <p><strong>Total Amount:</strong> $<%= order.formatted_amount %></p>
+                    </div>
+                </div>
+
+                <!-- Shipping Address -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Shipping Address</h5>
+                        <p class="card-text"><%= order.shipping_address %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/orders" class="btn btn-secondary">Back to Orders</a>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

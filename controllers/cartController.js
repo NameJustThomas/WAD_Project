@@ -205,7 +205,7 @@ exports.checkout = async (req, res) => {
             // Store checkout intent in session
             req.session.checkoutIntent = true;
             return res.json({
-                redirect: '/login'
+                redirect: '/auth/login'
             });
         }
 

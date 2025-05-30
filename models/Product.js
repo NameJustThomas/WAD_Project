@@ -20,31 +20,38 @@ class Product {
             const offset = (page - 1) * limit;
             const params = [];
 
-            let query = 'SELECT * FROM products WHERE 1=1';
+            let query = `
+                SELECT p.*, c.name as category_name
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id
+                WHERE 1=1
+            `;
 
             if (category_id) {
-                query += ' AND category_id = ?';
+                query += ' AND p.category_id = ?';
                 params.push(category_id);
             }
 
             if (search) {
-                query += ' AND (name LIKE ? OR description LIKE ?)';
+                query += ' AND (p.name LIKE ? OR p.description LIKE ?)';
                 params.push(`%${search}%`, `%${search}%`);
             }
+
+            query += ' GROUP BY p.id';
 
             // Add sorting
             switch (sort) {
                 case 'price_asc':
-                    query += ' ORDER BY price ASC';
+                    query += ' ORDER BY p.price ASC';
                     break;
                 case 'price_desc':
-                    query += ' ORDER BY price DESC';
+                    query += ' ORDER BY p.price DESC';
                     break;
                 case 'name_desc':
-                    query += ' ORDER BY name DESC';
+                    query += ' ORDER BY p.name DESC';
                     break;
                 default:
-                    query += ' ORDER BY name ASC';
+                    query += ' ORDER BY p.name ASC';
             }
 
             // Add pagination
@@ -116,9 +123,16 @@ class Product {
     static async create(productData) {
         try {
             const { name, description, price, discount_price, image_url, category_id, stock } = productData;
+            
+            // Xử lý đường dẫn ảnh nếu có
+            let finalImageUrl = image_url;
+            if (image_url && !image_url.startsWith('/images/products/')) {
+                finalImageUrl = `/images/products/${image_url}`;
+            }
+
             const [result] = await pool.query(
                 'INSERT INTO products (name, description, price, discount_price, image_url, category_id, stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [name, description, price, discount_price, image_url, category_id, stock]
+                [name, description, price, discount_price, finalImageUrl, category_id, stock]
             );
             return this.findById(result.insertId);
         } catch (error) {
@@ -127,12 +141,25 @@ class Product {
         }
     }
 
-    static async update(id, productData) {
+    static async update(id, data) {
         try {
-            const { name, description, price, discount_price, image_url, category_id, stock } = productData;
+            // Xử lý discount_price khi là chuỗi rỗng
+            if (data.discount_price === '') {
+                data.discount_price = null;
+            }
+
             const [result] = await pool.query(
                 'UPDATE products SET name = ?, description = ?, price = ?, discount_price = ?, image_url = ?, category_id = ?, stock = ? WHERE id = ?',
-                [name, description, price, discount_price, image_url, category_id, stock, id]
+                [
+                    data.name,
+                    data.description,
+                    data.price,
+                    data.discount_price,
+                    data.image_url,
+                    data.category_id,
+                    data.stock,
+                    id
+                ]
             );
             return result.affectedRows > 0;
         } catch (error) {
@@ -300,6 +327,67 @@ class Product {
             outOfStockProducts: parseInt(stats[0].outOfStockProducts || 0),
             totalCategories: parseInt(stats[0].totalCategories || 0)
         };
+    }
+
+    static async addImage(productId, imageFile) {
+        try {
+            const imagePath = `/images/products/${imageFile.filename}`;
+            const [result] = await pool.query(
+                'INSERT INTO product_images (product_id, image_path) VALUES (?, ?)',
+                [productId, imagePath]
+            );
+            return result.insertId;
+        } catch (error) {
+            console.error('Error in Product.addImage:', error);
+            throw error;
+        }
+    }
+
+    static async getImages(productId) {
+        try {
+            const [images] = await pool.query(
+                'SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, created_at ASC',
+                [productId]
+            );
+            return images;
+        } catch (error) {
+            console.error('Error in Product.getImages:', error);
+            throw error;
+        }
+    }
+
+    static async setPrimaryImage(productId, imageId) {
+        try {
+            // Reset tất cả ảnh của sản phẩm về không phải primary
+            await pool.query(
+                'UPDATE product_images SET is_primary = FALSE WHERE product_id = ?',
+                [productId]
+            );
+            
+            // Set ảnh được chọn làm primary
+            const [result] = await pool.query(
+                'UPDATE product_images SET is_primary = TRUE WHERE id = ? AND product_id = ?',
+                [imageId, productId]
+            );
+            
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error in Product.setPrimaryImage:', error);
+            throw error;
+        }
+    }
+
+    static async deleteImage(imageId) {
+        try {
+            const [result] = await pool.query(
+                'DELETE FROM product_images WHERE id = ?',
+                [imageId]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error in Product.deleteImage:', error);
+            throw error;
+        }
     }
 }
 

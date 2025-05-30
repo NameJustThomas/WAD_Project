@@ -1,13 +1,12 @@
 <!--
  * Admin Analytics Page
- * Purpose: Business analytics and reporting
+ * Purpose: Display sales and product analytics
  * Used by: adminController.analytics
  * Features:
- * - Sales analytics
- * - User statistics
+ * - Sales statistics
  * - Product performance
- * - Revenue reports
- * - Custom date ranges
+ * - Revenue tracking
+ * - Order analytics
  -->
 
 <!DOCTYPE html>
@@ -15,159 +14,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - Admin Panel</title>
+    <title><%= title %></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: #343a40;
-            color: white;
-        }
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-        }
-        .sidebar a:hover {
-            color: #17a2b8;
-        }
-        .card {
-            margin-bottom: 1.5rem;
-        }
-        .stat-card {
-            border-left: 4px solid #17a2b8;
-        }
-    </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <%- include('partials/sidebar', { path: '/admin/analytics' }) %>
+    <%- include('../partials/navbar') %>
 
-            <!-- Main Content -->
-            <div class="col-md-10 p-4">
-                <h2 class="mb-4">Analytics Dashboard</h2>
+    <div class="container mt-4">
+        <h2>Analytics Dashboard</h2>
 
-                <!-- Stats Cards -->
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="card stat-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Total Sales</h5>
-                                <h3 class="card-text">$<%= formattedTotalSales %></h3>
-                                <p class="text-muted">Last 30 days</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card stat-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Total Orders</h5>
-                                <h3 class="card-text"><%= totalOrders %></h3>
-                                <p class="text-muted">Last 30 days</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card stat-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Total Users</h5>
-                                <h3 class="card-text"><%= totalUsers %></h3>
-                                <p class="text-muted">All time</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card stat-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Total Products</h5>
-                                <h3 class="card-text"><%= totalProducts %></h3>
-                                <p class="text-muted">All time</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts -->
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Sales Over Time</h5>
-                                <canvas id="salesChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Top Selling Products</h5>
-                                <canvas id="productsChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Orders -->
-                <div class="card mt-4">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Recent Orders</h5>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% if (recentOrders && recentOrders.length > 0) { %>
-                                        <% recentOrders.forEach(order => { %>
-                                            <tr>
-                                                <td><%= order.id %></td>
-                                                <td><%= order.user_name %></td>
-                                                <td>$<%= order.formatted_amount %></td>
-                                                <td>
-                                                    <span class="badge bg-<%= order.status === 'completed' ? 'success' : 'warning' %>">
-                                                        <%= order.status %>
-                                                    </span>
-                                                </td>
-                                                <td><%= order.formatted_date %></td>
-                                            </tr>
-                                        <% }); %>
-                                    <% } else { %>
-                                        <tr>
-                                            <td colspan="5" class="text-center">No recent orders</td>
-                                        </tr>
-                                    <% } %>
-                                </tbody>
-                            </table>
-                        </div>
+                        <h5 class="card-title">Total Orders</h5>
+                        <h3 class="card-text"><%= data.totalOrders %></h3>
+                        <p class="text-muted">Last 30 days</p>
                     </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Revenue</h5>
+                        <h3 class="card-text">$<%= data.totalRevenue %></h3>
+                        <p class="text-muted">Last 30 days</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Average Order Value</h5>
+                        <h3 class="card-text">$<%= data.averageOrderValue %></h3>
+                        <p class="text-muted">Last 30 days</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Monthly Sales</h5>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top Products</h5>
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Recent Orders</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% data.recentOrders.forEach(order => { %>
+                                <tr>
+                                    <td>#<%= order.id %></td>
+                                    <td><%= order.customer %></td>
+                                    <td><%= order.date %></td>
+                                    <td>$<%= order.amount %></td>
+                                    <td>
+                                        <span class="badge bg-<%= order.status === 'completed' ? 'success' : 'warning' %>">
+                                            <%= order.status %>
+                                        </span>
+                                    </td>
+                                    <td><%= order.items %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/js/admin/charts.js"></script>
-    <div id="analyticsData" 
-         data-sales='<%- JSON.stringify(salesChartData) %>'
-         data-products='<%- JSON.stringify(productsChartData) %>'
-         style="display: none;"></div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dataElement = document.getElementById('analyticsData');
-            const chartData = {
-                salesData: JSON.parse(dataElement.dataset.sales),
-                productsData: JSON.parse(dataElement.dataset.products)
-            };
-            AdminCharts.initAnalyticsCharts(chartData);
+        // Monthly Sales Chart
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: <%= JSON.stringify(data.monthlySales.map(sale => sale.month)) %>,
+                datasets: [{
+                    label: 'Sales',
+                    data: <%= JSON.stringify(data.monthlySales.map(sale => sale.total)) %>,
+                    borderColor: '#17a2b8',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Top Products Chart
+        const productsCtx = document.getElementById('productsChart').getContext('2d');
+        new Chart(productsCtx, {
+            type: 'bar',
+            data: {
+                labels: <%= JSON.stringify(data.topProducts.map(product => product.name)) %>,
+                datasets: [{
+                    label: 'Quantity Sold',
+                    data: <%= JSON.stringify(data.topProducts.map(product => product.totalQuantity)) %>,
+                    backgroundColor: '#28a745'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
         });
     </script>
 </body>

@@ -45,7 +45,7 @@
                 <div class="col-md-3 mb-4">
                     <div class="card h-100 product-card">
                         <div class="product-image">
-                            <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>">
+                            <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="card-img-top" alt="<%= product.name %>">
                             <% if (product.discount_price) { %>
                                 <div class="discount-badge">
                                     Sale

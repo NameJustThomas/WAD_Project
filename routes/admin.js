@@ -13,40 +13,48 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { auth, isAdmin } = require('../middleware/auth');
+const upload = require('../middleware/upload');
+
+// Apply auth middleware first, then admin middleware
+router.use(auth);
+router.use(isAdmin);
 
 // Admin dashboard
-router.get('/', auth, isAdmin, (req, res) => adminController.index(req, res));
+router.get('/', adminController.index);
 
 // Product management
-router.get('/products', auth, isAdmin, (req, res) => adminController.getProducts(req, res));
-router.get('/products/:id', auth, isAdmin, (req, res) => adminController.getProduct(req, res));
-router.post('/products', auth, isAdmin, (req, res) => adminController.createProduct(req, res));
-router.put('/products/:id', auth, isAdmin, (req, res) => adminController.updateProduct(req, res));
-router.delete('/products/:id', auth, isAdmin, (req, res) => adminController.deleteProduct(req, res));
+router.get('/products', adminController.getProducts);
+router.get('/products/:id', adminController.getProduct);
+router.post('/products', upload.single('image'), adminController.createProduct);
+router.put('/products/:id', upload.single('image'), adminController.updateProduct);
+router.delete('/products/:id', adminController.deleteProduct);
 
 // Product image management
-router.get('/products/images', auth, isAdmin, (req, res) => adminController.getProductImages(req, res));
-router.post('/products/upload-image', auth, isAdmin, (req, res) => adminController.uploadProductImage(req, res));
+router.get('/products/images', adminController.getProductImages);
+router.post('/products/upload-image', adminController.uploadProductImage);
+router.post('/products/set-primary-image', adminController.setPrimaryImage);
+router.delete('/products/images/:imageId', adminController.deleteImage);
+router.get('/products/:productId/images', adminController.getProductImages);
 
 // Category management
-router.get('/categories', auth, isAdmin, (req, res) => adminController.getCategories(req, res));
-router.post('/categories', auth, isAdmin, (req, res) => adminController.createCategory(req, res));
-router.put('/categories/:id', auth, isAdmin, (req, res) => adminController.updateCategory(req, res));
-router.delete('/categories/:id', auth, isAdmin, (req, res) => adminController.deleteCategory(req, res));
+router.get('/categories', adminController.getCategories);
+router.post('/categories', adminController.createCategory);
+router.put('/categories/:id', adminController.updateCategory);
+router.delete('/categories/:id', adminController.deleteCategory);
 
 // Order management
-router.get('/orders', auth, isAdmin, (req, res) => adminController.getOrders(req, res));
-router.put('/orders/:id', auth, isAdmin, (req, res) => adminController.updateOrder(req, res));
+router.get('/orders', adminController.getOrders);
+router.put('/orders/:id', adminController.updateOrder);
 
 // User management
-router.get('/users', auth, isAdmin, (req, res) => adminController.getUsers(req, res));
-router.put('/users/:id', auth, isAdmin, (req, res) => adminController.updateUser(req, res));
-router.delete('/users/:id', auth, isAdmin, (req, res) => adminController.deleteUser(req, res));
+router.get('/users', adminController.getUsers);
+router.put('/users/:id', adminController.updateUser);
+router.delete('/users/:id', adminController.deleteUser);
 
 // Analytics
-router.get('/analytics', auth, isAdmin, (req, res) => adminController.analytics(req, res));
-router.post('/analytics/data', auth, isAdmin, (req, res) => adminController.getAnalyticsData(req, res));
-router.post('/analytics/filter', auth, isAdmin, (req, res) => adminController.filterAnalytics(req, res));
-router.post('/analytics/export/:type', auth, isAdmin, (req, res) => adminController.exportAnalytics(req, res));
+router.get('/analytics', adminController.analytics);
+router.post('/analytics/data', adminController.getAnalyticsData);
+router.post('/analytics/filter', adminController.filterAnalytics);
+router.post('/analytics/export/:type', adminController.exportAnalytics);
 
 module.exports = router; 
