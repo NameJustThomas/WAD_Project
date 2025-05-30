@@ -20,7 +20,6 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <!-- Navigation -->
     <%- include('../partials/navbar') %>
 
     <div class="container py-5">
@@ -46,8 +45,10 @@
                 <% products.forEach(product => { %>
                     <div class="col-md-4 mb-4">
                         <div class="card h-100">
-                            <% if (product.image) { %>
-                                <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>">
+                            <% if (product.image_url) { %>
+                                <img src="<%= product.image_url %>" class="card-img-top" alt="<%= product.name %>">
+                            <% } else { %>
+                                <img src="/images/products/no-image.jpg" class="card-img-top" alt="<%= product.name %>">
                             <% } %>
                             <div class="card-body">
                                 <h5 class="card-title"><%= product.name %></h5>
