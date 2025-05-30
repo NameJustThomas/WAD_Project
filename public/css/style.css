@@ -25,7 +25,6 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-
 @font-face {
   font-family: "Integral CF";
   src: url("/fonts/IntegralCF-Regular.otf") format("opentype");
@@ -90,13 +89,15 @@ body {
 }
 
 /* Featured Products */
-.card {
+.card,
+.product-card {
   transition: transform 0.3s ease;
   border: none;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.card:hover {
+.card:hover,
+.product-card:hover {
   transform: translateY(-5px);
 }
 
@@ -117,6 +118,9 @@ body {
 /* Footer */
 footer {
   border-top: 1px solid #dee2e6;
+  background: #f2f0f1;
+  border-top-left-radius: 100px;
+  border-top-right-radius: 100px;
 }
 
 footer a {
@@ -144,8 +148,8 @@ footer a:hover {
 }
 
 .btn-primary:hover {
-  background-color: darken(var(--primary-color), 10%);
-  border-color: darken(var(--primary-color), 10%);
+  background-color: #0069d9;
+  border-color: #0062cc;
 }
 
 /* Responsive Design */
@@ -157,62 +161,6 @@ footer a:hover {
   .min-vh-75 {
     min-height: 50vh;
   }
-}
-
-/* Product Card Styles */
-.product-card {
-  transition: transform 0.3s ease;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-}
-
-.product-image {
-  position: relative;
-  overflow: hidden;
-}
-
-.product-image img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.discount-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #ff4444;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 3px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.price-container {
-  margin: 10px 0;
-}
-
-.original-price {
-  color: #999;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-}
-
-.discount-price {
-  color: #ff4444;
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.price {
-  color: #333;
-  font-size: 1.2rem;
-  font-weight: bold;
 }
 
 /* Product Detail Page Styles */
@@ -276,16 +224,12 @@ footer a:hover {
   font-weight: 500;
 }
 
-/* Remove spinner buttons from number input */
+/* Remove spinner buttons */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-
-/* input[type="number"] {
-    -moz-appearance: textfield;
-} */
 
 /* Notifications */
 .notification {
@@ -340,7 +284,6 @@ input[type="number"]::-webkit-outer-spin-button {
   pointer-events: none;
 }
 
-/* Notification Container */
 .notification-container {
   z-index: 1050;
 }
@@ -348,7 +291,6 @@ input[type="number"]::-webkit-outer-spin-button {
 .payment-rect {
   width: 60px;
   height: 40px;
-  position: relative;
   background: white;
   box-shadow: 0 0.45px 4.48px rgba(183, 183, 183, 0.08);
   border-radius: 6px;
@@ -365,12 +307,6 @@ input[type="number"]::-webkit-outer-spin-button {
   object-fit: contain;
 }
 
-footer {
-  background: #f2f0f1;
-  border-top-left-radius: 100px;
-  border-top-right-radius: 100px;
-}
-
 .logobar {
   background-color: #0b0000;
   height: 48px;
@@ -383,7 +319,7 @@ footer {
 .logobar img {
   height: 36px;
   margin: 0 40px;
-  filter: brightness(0) invert(1); /* White logos */
+  filter: brightness(0) invert(1);
   transition: transform 0.3s ease;
 }
 
@@ -391,72 +327,53 @@ footer {
   transform: scale(1.1);
 }
 
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-/* CSS for NEW ARRIVALS Section */
-
-
+/* NEW ARRIVALS Section */
 .new-arrivals-row {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-  padding-bottom: 10px; /* Optional: space if scrollbar were visible */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding-bottom: 10px;
 }
 .new-arrivals-row::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .new-arrival-card-col {
-  flex: 0 0 auto;    /* Prevent shrinking/growing */
-  width: 270px;      /* Approx width of card + its internal padding */
-  padding-left: 15px;  /* Half of the desired gap between cards */
-  padding-right: 15px; /* Half of the desired gap between cards */
-  box-sizing: content-box; /* Ensures padding is outside the width */
+  flex: 0 0 auto;
+  width: 270px;
+  padding: 0 15px;
+  box-sizing: content-box;
 }
-/* Adjust first/last child padding if stripes don't align perfectly */
-.new-arrivals-striped-background .container {
-    /* Ensure container padding doesn't interfere with card alignment on stripes */
-    /* padding-left: 0; 
-    padding-right: 0; */
-}
-
 
 .new-arrival-card {
   border: none;
   border-radius: 10px;
   overflow: hidden;
-  background-color: transparent; /* Card itself is transparent */
+  background-color: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .new-arrival-image-container {
-  background-color: #FDEEF0; /* Light pinkish background for image part */
-  padding: 25px; /* Padding around the image */
+  background-color: #fdeef0;
+  padding: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 260px; /* Fixed height for image container */
+  height: 260px;
   border-radius: 10px 10px 0 0;
 }
 
 .new-arrival-img {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; /* Ensures whole image is visible, scaled down */
+  object-fit: contain;
 }
 
 .new-arrival-card-body {
-  background-color: #FFFFFF; /* White background for text part */
-  padding: 12px 15px 15px 15px;
+  background-color: #fff;
+  padding: 12px 15px 15px;
   text-align: center;
   border-radius: 0 0 10px 10px;
   flex-grow: 1;
@@ -472,9 +389,9 @@ footer {
   margin-bottom: 6px;
   text-transform: uppercase;
   line-height: 1.4;
-  min-height: calc(0.8rem * 1.4 * 2); /* Approx 2 lines */
-  overflow: hidden; /* Prevent long names from breaking layout */
-  text-overflow: ellipsis; /* Add ... for overflow, may need more lines or display: -webkit-box */
+  min-height: calc(0.8rem * 1.4 * 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-rating-new-arrival {
@@ -483,10 +400,10 @@ footer {
 }
 .product-rating-new-arrival .fas.fa-star,
 .product-rating-new-arrival .fas.fa-star-half-alt {
-  color: #FFB300; /* Brighter Gold/Orange for stars */
+  color: #ffb300;
 }
 .product-rating-new-arrival .far.fa-star {
-  color: #DDCDBE; /* Light grey for empty stars */
+  color: #ddcdbe;
 }
 .product-rating-new-arrival .rating-text-new-arrival {
   color: #666;
@@ -496,7 +413,7 @@ footer {
 }
 
 .product-price-new-arrival {
-  margin-top: auto; /* Pushes price to the bottom */
+  margin-top: auto;
 }
 .current-price-new-arrival {
   font-size: 1.05rem;
@@ -510,8 +427,8 @@ footer {
   margin-left: 7px;
 }
 .discount-percentage-badge-new-arrival {
-  background-color: #FBE0E5; /* Light pink background */
-  color: #D9534F; /* Reddish text */
+  background-color: #fbe0e5;
+  color: #d9534f;
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -522,9 +439,9 @@ footer {
 }
 
 .btn-view-all-new-arrivals {
-  background-color: #FFFFFF;
+  background-color: #fff;
   color: #222;
-  border: 1px solid #CCC;
+  border: 1px solid #ccc;
   padding: 10px 40px;
   font-weight: 700;
   text-transform: uppercase;
@@ -539,6 +456,7 @@ footer {
   color: #000;
 }
 
+/* Categories */
 .categories-section {
   min-height: 866px;
   padding-top: 3rem;
@@ -593,48 +511,39 @@ footer {
   color: black;
 }
 
-/* style.css */
-
-/* Register button: black background, white text, rounded corners */
+/* Register and Login */
 .btn-register {
-    background-color: black !important; /* override bootstrap */
-    color: white !important;
-    border-radius: 30px !important; /* more rounded corners */
-    transition: background-color 0.3s ease;
+  background-color: black !important;
+  color: white !important;
+  border-radius: 30px !important;
+  transition: background-color 0.3s ease;
 }
-
 .btn-register:hover {
-    background-color: #222 !important; /* slightly lighter black */
-    color: white !important;
+  background-color: #222 !important;
+  color: white !important;
 }
-
-/* Login link color black and hover effect */
-.login-link {
-    color: black !important;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.login-link:hover {
-    color: #444 !important;
-    text-decoration: underline;
-}
-
+.login-link,
 .login-section a {
-    color: black !important;
-    font-weight: 600;
-    text-decoration: none;
+  color: black !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+.login-link:hover,
+.login-section a:hover {
+  color: #444 !important;
+  text-decoration: underline;
 }
 
+/* Feedback Cards */
 .scroll-container {
   overflow-x: auto;
   overflow-y: hidden;
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   scroll-snap-type: x mandatory;
 }
 .scroll-container::-webkit-scrollbar {
-  display: none;             /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .feedback-card {
@@ -654,11 +563,99 @@ footer {
 .feedback-card.active {
   opacity: 1;
   filter: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.custom-tabs-wrapper {
+  font-family: 'Integral CF', sans-serif;
 }
 
-.feedback-card.blurred {
-  filter: blur(2px);
+.custom-tab-links .tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 10px 0;
+  position: relative;
 }
 
+.custom-tab-links .tab-btn.active {
+  color: #000;
+}
+
+.custom-tab-links .tab-btn.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background-color: black;
+}
+
+.pill-btn {
+  padding: 12px 20px;
+  border-radius: 62px;
+  background: #f0f0f0;
+  border: none;
+  font-size: 16px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pill-btn.btn-dark {
+  background: black;
+  color: white;
+}
+
+.circle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.circle-btn i,
+.pill-btn i {
+  font-size: 16px;
+}
+
+  #detailTabs {
+    width: 1240px;
+    margin: 0 auto; /* center horizontally */
+    border-bottom: 4px solid black; /* black bottom bar under the whole tab container */
+  }
+
+  /* Tab link default styles */
+  #detailTabs .nav-link {
+    color: grey;
+    font-weight: bold;
+    font-family: 'Jack Frost', cursive; /* assuming you have this font */
+    transition: color 0.3s ease; /* smooth color transition */
+  }
+
+  /* On hover - animate color to black */
+  #detailTabs .nav-link:hover {
+    color: black;
+  }
+
+  /* Active tab title is black */
+  #detailTabs .nav-link.active {
+    color: black;
+  }
+
+  /* Remove default bootstrap active underline */
+  #detailTabs .nav-link.active, 
+  #detailTabs .nav-link {
+    border: none !important;
+  }
+
+  
 /* your existing verified-dot and feedback-text styles */

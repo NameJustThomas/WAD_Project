@@ -1,14 +1,4 @@
-<!--
- * Product Detail Page
- * Purpose: Display detailed product information
- * Used by: productController.show
- * Features:
- * - Product images
- * - Product description
- * - Price and availability
- * - Add to cart
- * - Related products
- -->
+<!-- Product Detail Page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,229 +8,279 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .product-gallery {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        .main-image {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .thumbnail-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .thumbnail {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: border-color 0.2s;
-        }
-        .thumbnail.active {
-            border-color: #0d6efd;
-        }
-        .product-info {
-            padding: 20px;
-        }
-        .product-title {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-        .product-category {
-            color: #6c757d;
-            margin-bottom: 20px;
-        }
-        .price-container {
-            margin: 20px 0;
-        }
-        .original-price {
-            color: #6c757d;
-            text-decoration: line-through;
-            font-size: 1.2rem;
-        }
-        .discount-price {
-            color: #dc3545;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        .price {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        .quantity-input {
-            width: 100px;
-            text-align: center;
-        }
-        .related-products {
-            margin-top: 50px;
-        }
-        .related-product-card {
-            transition: transform 0.2s;
-            border: 1px solid #ddd;
-            height: 100%;
-        }
-        .related-product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .related-product-image {
-            height: 200px;
-            object-fit: cover;
-        }
-        .loading {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        @media (max-width: 768px) {
-            .main-image {
-                height: 300px;
-            }
-            .thumbnail {
-                width: 60px;
-                height: 60px;
-            }
-        }
-    </style>
 </head>
 <body>
-    <%- include('../partials/navbar') %>
+<%- include('../partials/topbar') %>
+<%- include('../partials/navbar') %>
 
-    <div class="container py-5">
-        <section class="product-detail py-5">
-            <div class="container">
-                <div class="row">
-                    <!-- Product Gallery -->
-                    <div class="col-md-6">
-                        <div class="product-gallery">
-                            <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" alt="<%= product.name %>" class="main-image">
-                            <div class="thumbnail-container">
-                                <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" 
-                                     alt="<%= product.name %>" 
-                                     class="thumbnail active"
-                                     data-full-image="<%= product.image_url || '/images/products/no-image.jpg' %>">
+<div class="container py-5">
+    <div class="row gx-5">
+        <!-- Product Gallery -->
+        <div class="col-lg-6">
+            <div class="product-gallery">
+                <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="img-fluid rounded main-image" alt="<%= product.name %>">
+                <div class="thumbnail-container d-flex gap-2 mt-3">
+                    <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="thumbnail active border rounded" alt="<%= product.name %>">
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-lg-6">
+            <h1 class="fw-bold"><%= product.name %></h1>
+            <div class="d-flex align-items-center mb-3 font-jack-frost">
+                <span class="text-warning"><i class="fas fa-star"></i></span>
+                <span class="ms-1"><%= product.rating %>/5</span>
+            </div>
+
+            <div class="mb-3 font-jack-frost">
+                <% if (product.has_discount) { %>
+                    <span class="text-muted text-decoration-line-through">$<%= product.price %></span>
+                    <span class="text-danger fw-bold fs-4 ms-2">$<%= product.discount_price %></span>
+                <% } else { %>
+                    <span class="text-dark fw-bold fs-4">$<%= product.price %></span>
+                <% } %>
+            </div>
+
+            <p class="mb-4 text-muted font-jack-frost"><%= product.description %></p>
+
+            <form class="add-to-cart-form font-jack-frost" data-product-id="<%= product.id %>">
+                <div class="d-flex align-items-center mb-3">
+                    <button type="button" class="btn btn-outline-secondary quantity-btn minus">-</button>
+                    <input type="number" name="quantity" value="1" min="1" max="<%= product.stock %>" class="form-control quantity-input mx-2" style="width: 70px;">
+                    <button type="button" class="btn btn-outline-secondary quantity-btn plus">+</button>
+                </div>
+                <button type="submit" class="btn btn-dark w-100">
+                    <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+                </button>
+            </form>
+            <p class="text-muted mt-2 font-jack-frost">Available: <%= product.stock %> items</p>
+        </div>
+    </div>
+
+    <!-- Product Detail -->
+<div class="container mt-5">
+  <ul class="nav nav-tabs justify-content-center fw-bold font-jack-frost" id="detailTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">Product Details</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">Rating & Reviews</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq" type="button" role="tab">FAQs</button>
+    </li>
+  </ul>
+</div>
+  
+  <div class="tab-content p-4" id="detailTabsContent">
+    <!-- Product Details -->
+    <div class="tab-pane fade show active" id="details" role="tabpanel">
+      <h5>About This Product</h5>
+      <p><%= product.description %></p>
+    </div>
+
+    <!-- Reviews -->
+    <div class="tab-pane fade" id="reviews" role="tabpanel">
+      <div id="reviews-container" class="row row-cols-1 row-cols-md-2 g-4">
+        <!-- Reviews will be loaded here dynamically -->
+      </div>
+      <div class="text-center mt-3">
+        <button id="loadMoreReviews" class="btn btn-outline-primary btn-sm">Load More Reviews</button>
+      </div>
+    </div>
+
+    <!-- FAQs -->
+    <div class="tab-pane fade" id="faq" role="tabpanel">
+      <div class="accordion" id="faqAccordion">
+        <% faqs.forEach((faq, i) => { %>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading<%= i %>">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= i %>">
+                <%= faq.question %>
+              </button>
+            </h2>
+            <div id="collapse<%= i %>" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                <%= faq.answer %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Related Products -->
+    <% if (relatedProducts && relatedProducts.length > 0) { %>
+        <div class="mt-5">
+           <h3 class="mb-4 text-center">You Might Also Like</h3>
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3">
+                <% relatedProducts.forEach(product => { %>
+                    <div class="col">
+                        <div class="card h-100 related-product-card">
+                            <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="card-img-top related-product-image" alt="<%= product.name %>">
+                            <div class="card-body font-jack-frost">
+                                <h6 class="card-title"><%= product.name %></h6>
+                                <% if (product.has_discount) { %>
+                                    <p class="mb-0 text-decoration-line-through text-muted small">$<%= product.price %></p>
+                                    <p class="text-danger fw-bold">$<%= product.discount_price %></p>
+                                <% } else { %>
+                                    <p class="fw-bold">$<%= product.price %></p>
+                                <% } %>
+                                <a href="/products/<%= product.id %>" class="btn btn-outline-primary btn-sm mt-2">View</a>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Product Info -->
-                    <div class="col-md-6">
-                        <div class="product-info">
-                            <h1 class="product-title"><%= product.name %></h1>
-                            <p class="product-category"><%= product.category_name %></p>
-                            <div class="price-container">
-                                <% if (product.has_discount) { %>
-                                    <p class="original-price">$<%= product.price %></p>
-                                    <p class="discount-price">$<%= product.discount_price %></p>
-                                <% } else { %>
-                                    <p class="price">$<%= product.price %></p>
-                                <% } %>
-                            </div>
-                            <p class="product-description"><%= product.description %></p>
-                            <!-- Add to Cart Form -->
-                            <form class="add-to-cart-form" data-product-id="<%= product.id %>">
-                                <div class="quantity-selector">
-                                    <button type="button" class="quantity-btn minus">-</button>
-                                    <input type="number" name="quantity" value="1" min="1" max="<%= product.stock %>" class="quantity-input">
-                                    <button type="button" class="quantity-btn plus">+</button>
-                                </div>
-                                <button type="submit" class="add-to-cart" data-product-id="<%= product.id %>">
-                                    <i class="fas fa-shopping-cart"></i> Add to Cart
-                                </button>
-                            </form>
-                            <p class="text-muted">Available: <span id="availableStock"><%= product.stock %></span> items</p>
+                <% }); %>
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Product Image Thumbnails
+    const mainImage = document.querySelector('.main-image');
+    const thumbnails = document.querySelectorAll('.thumbnail');
+
+    thumbnails.forEach(thumb => {
+        thumb.addEventListener('click', function () {
+            mainImage.src = this.src;
+            thumbnails.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Zoom Modal
+    if (mainImage) {
+        mainImage.addEventListener('click', function () {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body p-0">
+                            <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <img src="${this.src}" class="img-fluid" alt="${this.alt}">
                         </div>
                     </div>
                 </div>
-
-                <!-- Related Products -->
-                <% if (relatedProducts && relatedProducts.length > 0) { %>
-                    <div class="related-products">
-                        <h3 class="mb-4">Related Products</h3>
-                        <div class="row">
-                            <% relatedProducts.forEach(relatedProduct => { %>
-                                <div class="col-md-3 col-sm-6 mb-4">
-                                    <div class="card related-product-card">
-                                        <img src="<%= relatedProduct.image_url || '/images/products/no-image.jpg' %>" class="card-img-top related-product-image" alt="<%= relatedProduct.name %>">
-                                        <div class="card-body">
-                                            <h5 class="card-title"><%= relatedProduct.name %></h5>
-                                            <div class="price-container">
-                                                <% if (relatedProduct.has_discount) { %>
-                                                    <p class="original-price text-decoration-line-through">$<%= relatedProduct.price %></p>
-                                                    <p class="discount-price">$<%= relatedProduct.discount_price %></p>
-                                                <% } else { %>
-                                                    <p class="price">$<%= relatedProduct.price %></p>
-                                                <% } %>
-                                            </div>
-                                            <div class="d-flex justify-content-between mt-3">
-                                                <a href="/products/<%= relatedProduct.id %>" class="btn btn-outline-primary">View Details</a>
-                                                <button class="btn btn-primary add-to-cart" data-product-id="<%= relatedProduct.id %>">
-                                                    <i class="fas fa-cart-plus"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            <% }); %>
-                        </div>
-                    </div>
-                <% } %>
-            </div>
-        </section>
-    </div>
-
-    <%- include('../partials/footer') %>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/main.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle thumbnail clicks
-            const mainImage = document.querySelector('.main-image');
-            const thumbnails = document.querySelectorAll('.thumbnail');
-
-            thumbnails.forEach(thumb => {
-                thumb.addEventListener('click', function() {
-                    // Update main image
-                    mainImage.src = this.src;
-                    
-                    // Update active state
-                    thumbnails.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-
-            // Handle main image click for zoom
-            mainImage.addEventListener('click', function() {
-                const modal = document.createElement('div');
-                modal.className = 'modal fade';
-                modal.innerHTML = `
-                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-body p-0">
-                                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-                                <img src="${this.src}" class="img-fluid" alt="${this.alt}">
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-                
-                const modalInstance = new bootstrap.Modal(modal);
-                modalInstance.show();
-                
-                modal.addEventListener('hidden.bs.modal', function() {
-                    modal.remove();
-                });
+            `;
+            document.body.appendChild(modal);
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
+            modal.addEventListener('hidden.bs.modal', function () {
+                modal.remove();
             });
         });
-    </script>
+    }
+
+    // Add to Cart & Quantity Controls
+    const cartForm = document.querySelector('.add-to-cart-form');
+
+    if (cartForm) {
+        let minusBtn = cartForm.querySelector('.quantity-btn.minus');
+        let plusBtn = cartForm.querySelector('.quantity-btn.plus');
+        const quantityInput = cartForm.querySelector('input[name="quantity"]');
+        const max = parseInt(quantityInput.max) || 99;
+
+        // Remove duplicate event listeners by replacing buttons
+        const newMinusBtn = minusBtn.cloneNode(true);
+        const newPlusBtn = plusBtn.cloneNode(true);
+        minusBtn.replaceWith(newMinusBtn);
+        plusBtn.replaceWith(newPlusBtn);
+        minusBtn = newMinusBtn;
+        plusBtn = newPlusBtn;
+
+        minusBtn.addEventListener('click', () => {
+            let value = parseInt(quantityInput.value);
+            if (value > 1) quantityInput.value = value - 1;
+        });
+
+        plusBtn.addEventListener('click', () => {
+            let value = parseInt(quantityInput.value);
+            if (value < max) quantityInput.value = value + 1;
+        });
+
+        cartForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const productId = cartForm.dataset.productId;
+            const quantity = parseInt(quantityInput.value) || 1;
+
+            fetch(`/cart/add/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quantity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    const cartBadge = document.querySelector('#cart-count');
+                    if (cartBadge) cartBadge.textContent = data.cartCount;
+                } else {
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('⚠️ ' + data.message);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Add to Cart Error:', err);
+                alert('❌ Failed to add product to cart.');
+            });
+        });
+    }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  let reviewsPage = 1;
+
+  function loadReviews() {
+    fetch(`/api/products/<%= product.id %>/reviews?page=${reviewsPage}`)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('reviews-container');
+        data.reviews.forEach(review => {
+          const col = document.createElement('div');
+          col.className = 'col';
+          col.innerHTML = `
+            <div class="border rounded p-3 bg-white h-100">
+              <div class="mb-2">
+                <span class="text-warning">${'★'.repeat(review.rating)}</span>
+              </div>
+              <h6 class="fw-bold">${review.author}</h6>
+              <p class="small text-muted">Posted on ${new Date(review.date).toLocaleDateString()}</p>
+              <p>${review.comment}</p>
+            </div>
+          `;
+          container.appendChild(col);
+        });
+
+        if (!data.hasMore) {
+          document.getElementById('loadMoreReviews').style.display = 'none';
+        }
+        reviewsPage++;
+      })
+      .catch(err => {
+        console.error('Failed to load reviews', err);
+      });
+  }
+
+  document.getElementById('loadMoreReviews').addEventListener('click', loadReviews);
+
+  loadReviews(); // Load first batch
+});
+</script>
+
 </body>
-</html> 
+</html>

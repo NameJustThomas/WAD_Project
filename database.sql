@@ -118,3 +118,38 @@ INSERT INTO products (name, description, price, stock, category_id, image_url) V
 ALTER TABLE users
 ADD COLUMN reset_token VARCHAR(255) NULL,
 ADD COLUMN reset_token_expires DATETIME NULL;
+
+INSERT INTO feedbacks (name, rating, content) VALUES
+('Alice Nguyen', 5, 'Absolutely love the product quality and delivery time!'),
+('Minh Tran', 4, 'Good experience overall. Packaging could be better.'),
+('Linh Hoang', 5, 'Fantastic customer service and great pricing.'),
+('Duc Pham', 3, 'Average experience. Delivery was late by two days.'),
+('Thu Le', 5, 'Will definitely buy again! Highly recommended.'),
+('Quan Vo', 4, 'Very happy with my purchase, but the color was slightly different.'),
+('My Duyen', 5, 'Excellent quality and super fast shipping.'),
+('Hanh Bui', 2, 'Product arrived damaged. Awaiting support response.'),
+('Trung Tuan', 5, 'Top-notch service and product. Will refer friends.'),
+('Kim Chi', 4, 'Good deal for the price. Smooth transaction.');
+
+-- Create faqs table
+CREATE TABLE IF NOT EXISTS faqs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    question VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+
+-- Create reviews table
+CREATE TABLE IF NOT EXISTS reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

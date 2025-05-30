@@ -8,6 +8,8 @@
  * - Filter products by category
  * - Sort products
  * - Pagination
+ * - FAQ support on product detail page
+ * - FAQ management (create, update, delete) for admins
  */
 
 const express = require('express');
@@ -16,6 +18,7 @@ const pool = require('../config/database');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Cart = require('../models/Cart');
+const FAQ = require('../models/FAQ');  // Import FAQ model
 
 // Helper function to format price
 const formatPrice = (price) => {
@@ -70,7 +73,7 @@ exports.index = async (req, res) => {
     }
 };
 
-// Get single product
+// Get single product with FAQs
 exports.show = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -89,6 +92,9 @@ exports.show = async (req, res) => {
             exclude: product.id
         });
 
+        // Get FAQs related to product
+        const faqs = await FAQ.findByProductId(product.id);
+
         // Get cart count from database if user is logged in
         let cartCount = 0;
         if (req.user) {
@@ -103,6 +109,7 @@ exports.show = async (req, res) => {
                 stock: parseInt(product.stock) || 0
             },
             relatedProducts,
+            faqs,  // Pass FAQs to template
             cartCount
         });
     } catch (error) {
@@ -166,7 +173,6 @@ exports.search = async (req, res) => {
 // Add to cart
 exports.addToCart = async (req, res) => {
     try {
-        // Check if user is logged in
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -179,9 +185,7 @@ exports.addToCart = async (req, res) => {
         const quantity = parseInt(req.body.quantity) || 1;
         const userId = req.user.id;
 
-        // Get product from database
         const product = await Product.findById(productId);
-        
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -189,7 +193,6 @@ exports.addToCart = async (req, res) => {
             });
         }
 
-        // Check if product is in stock
         if (product.stock < quantity) {
             return res.status(400).json({
                 success: false,
@@ -197,10 +200,8 @@ exports.addToCart = async (req, res) => {
             });
         }
 
-        // Add to cart using Cart model
         const cartItem = await Cart.addToCart(userId, productId, quantity);
         
-        // Get updated cart count
         const cartItems = await Cart.getCartItems(userId);
         const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -290,4 +291,67 @@ exports.getTopSellingProducts = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}; 
+};
+
+/* --------- FAQ management methods (Admin only) --------- */
+
+// Create FAQ for a product
+exports.createFAQ = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { question, answer } = req.body;
+
+        if (!question || !answer) {
+            return res.status(400).json({ message: 'Question and answer are required' });
+        }
+
+        const faq = await FAQ.create({ product_id: productId, question, answer });
+
+        res.status(201).json({
+            message: 'FAQ created successfully',
+            faq
+        });
+    } catch (error) {
+        console.error('Error creating FAQ:', error);
+        res.status(500).json({ message: 'Error creating FAQ' });
+    }
+};
+
+// Update FAQ by ID
+exports.updateFAQ = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { question, answer } = req.body;
+
+        if (!question || !answer) {
+            return res.status(400).json({ message: 'Question and answer are required' });
+        }
+
+        const success = await FAQ.update(id, { question, answer });
+        if (!success) {
+            return res.status(404).json({ message: 'FAQ not found' });
+        }
+
+        res.json({ message: 'FAQ updated successfully' });
+    } catch (error) {
+        console.error('Error updating FAQ:', error);
+        res.status(500).json({ message: 'Error updating FAQ' });
+    }
+};
+
+// Delete FAQ by ID
+exports.deleteFAQ = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const success = await FAQ.delete(id);
+
+        if (!success) {
+            return res.status(404).json({ message: 'FAQ not found' });
+        }
+
+        res.json({ message: 'FAQ deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting FAQ:', error);
+        res.status(500).json({ message: 'Error deleting FAQ' });
+    }
+};
