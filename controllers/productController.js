@@ -171,7 +171,7 @@ exports.addToCart = async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: 'Please login to add items to cart',
-                redirect: '/login'
+                redirect: '/auth/login'
             });
         }
 

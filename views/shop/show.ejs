@@ -14,7 +14,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= product.name %> - Online Shop</title>
+    <title><%= title %> - Online Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
@@ -113,86 +113,88 @@
 <body>
     <%- include('../partials/navbar') %>
 
-    <section class="product-detail py-5">
-        <div class="container">
-            <div class="row">
-                <!-- Product Gallery -->
-                <div class="col-md-6">
-                    <div class="product-gallery">
-                        <img src="<%= product.image_url %>" alt="<%= product.name %>" class="main-image">
-                        <div class="thumbnail-container">
-                            <img src="<%= product.image_url %>" 
-                                 alt="<%= product.name %>" 
-                                 class="thumbnail active"
-                                 data-full-image="<%= product.image_url %>">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Product Info -->
-                <div class="col-md-6">
-                    <div class="product-info">
-                        <h1 class="product-title"><%= product.name %></h1>
-                        <p class="product-category"><%= product.category_name %></p>
-                        <div class="price-container">
-                            <% if (product.has_discount) { %>
-                                <p class="original-price">$<%= product.price %></p>
-                                <p class="discount-price">$<%= product.discount_price %></p>
-                            <% } else { %>
-                                <p class="price">$<%= product.price %></p>
-                            <% } %>
-                        </div>
-                        <p class="product-description"><%= product.description %></p>
-                        <!-- Add to Cart Form -->
-                        <form class="add-to-cart-form" data-product-id="<%= product.id %>">
-                            <div class="quantity-selector">
-                                <button type="button" class="quantity-btn minus">-</button>
-                                <input type="number" name="quantity" value="1" min="1" max="<%= product.stock %>" class="quantity-input">
-                                <button type="button" class="quantity-btn plus">+</button>
+    <div class="container py-5">
+        <section class="product-detail py-5">
+            <div class="container">
+                <div class="row">
+                    <!-- Product Gallery -->
+                    <div class="col-md-6">
+                        <div class="product-gallery">
+                            <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" alt="<%= product.name %>" class="main-image">
+                            <div class="thumbnail-container">
+                                <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" 
+                                     alt="<%= product.name %>" 
+                                     class="thumbnail active"
+                                     data-full-image="<%= product.image_url || '/images/products/no-image.jpg' %>">
                             </div>
-                            <button type="submit" class="add-to-cart" data-product-id="<%= product.id %>">
-                                <i class="fas fa-shopping-cart"></i> Add to Cart
-                            </button>
-                        </form>
-                        <p class="text-muted">Available: <span id="availableStock"><%= product.stock %></span> items</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Product Info -->
+                    <div class="col-md-6">
+                        <div class="product-info">
+                            <h1 class="product-title"><%= product.name %></h1>
+                            <p class="product-category"><%= product.category_name %></p>
+                            <div class="price-container">
+                                <% if (product.has_discount) { %>
+                                    <p class="original-price">$<%= product.price %></p>
+                                    <p class="discount-price">$<%= product.discount_price %></p>
+                                <% } else { %>
+                                    <p class="price">$<%= product.price %></p>
+                                <% } %>
+                            </div>
+                            <p class="product-description"><%= product.description %></p>
+                            <!-- Add to Cart Form -->
+                            <form class="add-to-cart-form" data-product-id="<%= product.id %>">
+                                <div class="quantity-selector">
+                                    <button type="button" class="quantity-btn minus">-</button>
+                                    <input type="number" name="quantity" value="1" min="1" max="<%= product.stock %>" class="quantity-input">
+                                    <button type="button" class="quantity-btn plus">+</button>
+                                </div>
+                                <button type="submit" class="add-to-cart" data-product-id="<%= product.id %>">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                            </form>
+                            <p class="text-muted">Available: <span id="availableStock"><%= product.stock %></span> items</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Related Products -->
-            <% if (relatedProducts && relatedProducts.length > 0) { %>
-                <div class="related-products">
-                    <h3 class="mb-4">Related Products</h3>
-                    <div class="row">
-                        <% relatedProducts.forEach(relatedProduct => { %>
-                            <div class="col-md-3 col-sm-6 mb-4">
-                                <div class="card related-product-card">
-                                    <img src="<%= relatedProduct.image %>" class="card-img-top related-product-image" alt="<%= relatedProduct.name %>">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><%= relatedProduct.name %></h5>
-                                        <div class="price-container">
-                                            <% if (relatedProduct.has_discount) { %>
-                                                <p class="original-price text-decoration-line-through">$<%= relatedProduct.price %></p>
-                                                <p class="discount-price">$<%= relatedProduct.discount_price %></p>
-                                            <% } else { %>
-                                                <p class="price">$<%= relatedProduct.price %></p>
-                                            <% } %>
-                                        </div>
-                                        <div class="d-flex justify-content-between mt-3">
-                                            <a href="/products/<%= relatedProduct.id %>" class="btn btn-outline-primary">View Details</a>
-                                            <button class="btn btn-primary add-to-cart" data-product-id="<%= relatedProduct.id %>">
-                                                <i class="fas fa-cart-plus"></i>
-                                            </button>
+                <!-- Related Products -->
+                <% if (relatedProducts && relatedProducts.length > 0) { %>
+                    <div class="related-products">
+                        <h3 class="mb-4">Related Products</h3>
+                        <div class="row">
+                            <% relatedProducts.forEach(relatedProduct => { %>
+                                <div class="col-md-3 col-sm-6 mb-4">
+                                    <div class="card related-product-card">
+                                        <img src="<%= relatedProduct.image_url || '/images/products/no-image.jpg' %>" class="card-img-top related-product-image" alt="<%= relatedProduct.name %>">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><%= relatedProduct.name %></h5>
+                                            <div class="price-container">
+                                                <% if (relatedProduct.has_discount) { %>
+                                                    <p class="original-price text-decoration-line-through">$<%= relatedProduct.price %></p>
+                                                    <p class="discount-price">$<%= relatedProduct.discount_price %></p>
+                                                <% } else { %>
+                                                    <p class="price">$<%= relatedProduct.price %></p>
+                                                <% } %>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-3">
+                                                <a href="/products/<%= relatedProduct.id %>" class="btn btn-outline-primary">View Details</a>
+                                                <button class="btn btn-primary add-to-cart" data-product-id="<%= relatedProduct.id %>">
+                                                    <i class="fas fa-cart-plus"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        <% }); %>
+                            <% }); %>
+                        </div>
                     </div>
-                </div>
-            <% } %>
-        </div>
-    </section>
+                <% } %>
+            </div>
+        </section>
+    </div>
 
     <%- include('../partials/footer') %>
 

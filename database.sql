@@ -14,6 +14,7 @@ CREATE DATABASE IF NOT EXISTS onlineshop;
 USE onlineshop;
 
 -- Drop existing tables if they exist (in correct order due to foreign key constraints)
+DROP TABLE IF EXISTS product_images;
 DROP TABLE IF EXISTS cart;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
@@ -86,6 +87,16 @@ CREATE TABLE IF NOT EXISTS cart (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+-- Create product_images table
+CREATE TABLE IF NOT EXISTS product_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
 -- Insert sample categories
 INSERT INTO categories (name, description) VALUES
 ('Electronics', 'Electronic devices and accessories'),
@@ -103,3 +114,7 @@ INSERT INTO products (name, description, price, stock, category_id, image_url) V
 ('Textbook', 'Educational textbook', 49.99, 150, 3, '/images/products/textbook.jpg'),
 ('Plant Pot', 'Decorative ceramic plant pot', 24.99, 60, 4, '/images/products/plantpot.jpg'),
 ('Garden Tools', 'Set of essential garden tools', 39.99, 40, 4, '/images/products/gardentools.jpg');
+
+ALTER TABLE users
+ADD COLUMN reset_token VARCHAR(255) NULL,
+ADD COLUMN reset_token_expires DATETIME NULL;

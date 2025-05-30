@@ -1,0 +1,68 @@
+<section class="py-5 bg-light">
+  <div class="container">
+    <h2 class="fw-bold text-center mb-4">OUR HAPPY CUSTOMERS</h2>
+
+    <div id="feedback-scroll-container" class="scroll-container d-flex gap-4 px-2">
+      <% feedbacks.forEach((feedback, index) => { %>
+        <div
+          class="feedback-card"
+          data-index="<%= index %>"
+          onclick="handleCardClick(<%= index %>)"
+        >
+          <div class="card-body p-0">
+            <!-- Stars -->
+            <div class="d-flex mb-2">
+              <% for (let i = 0; i < feedback.rating; i++) { %>
+                <i class="fas fa-star text-warning me-1"></i>
+              <% } %>
+            </div>
+
+            <!-- Name + Verified -->
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <h5 class="fw-bold mb-0 text-uppercase"><%= feedback.name %></h5>
+              <div class="verified-dot"></div>
+            </div>
+
+            <!-- Feedback Text -->
+            <p class="feedback-text mb-0">“<%= feedback.content %>”</p>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<script>
+  const cards = document.querySelectorAll('.feedback-card');
+  const totalCards = cards.length;
+
+  // Initialize active card (middle)
+  const middleIndex = Math.floor((totalCards / 2) - 1);
+  let activeIndex = middleIndex >= 0 ? middleIndex : 0;
+
+  function updateCardsState(active) {
+    cards.forEach((card, i) => {
+      card.classList.remove('active', 'blurred');
+
+      // Handle circular neighbors by normalizing indexes
+      const prevIndex = (active - 1 + totalCards) % totalCards;
+      const nextIndex = (active + 1) % totalCards;
+
+      if (i === active || i === prevIndex || i === nextIndex) {
+        card.classList.add('active');
+      } else {
+        card.classList.add('blurred');
+      }
+    });
+  }
+
+  function handleCardClick(index) {
+    // Wrap index for infinite looping
+    activeIndex = ((index % totalCards) + totalCards) % totalCards;
+    updateCardsState(activeIndex);
+    cards[activeIndex].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+  }
+
+  // Initial setup
+  updateCardsState(activeIndex);
+</script>

@@ -1,0 +1,17 @@
+<% if (!user) { %>
+  <!-- Top Signup Banner using Bootstrap -->
+  <div id="signup-banner" class="bg-black text-white py-2 px-lg-5 d-flex align-items-center justify-content-between">
+    <div class="w-100 text-center d-flex justify-content-center align-items-center">
+      <span class="me-2 fw-bold" style="font-size: 14px; font-family: 'Jack Frost';">
+        Sign up and get 20% off your first order.
+      </span>
+      <a href="/register" class="text-white text-decoration-underline" style="font-size: 14px; font-family: 'Jack Frost'; font-weight: 400;">
+        Sign Up Now
+      </a>
+    </div>
+    <!-- Close Button -->
+    <button type="button" class="btn btn-sm text-white ms-3 p-0 border-0 bg-transparent" onclick="closeSignupBanner()" aria-label="Close">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+<% } %>

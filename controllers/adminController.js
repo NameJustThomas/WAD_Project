@@ -22,6 +22,7 @@ const OrderItem = require('../models/OrderItem');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const upload = require('../middleware/upload');
 
 // Middleware to check if user is admin
 exports.isAdmin = (req, res, next) => {
@@ -75,6 +76,13 @@ exports.index = async (req, res) => {
             total: parseFloat(sale.total || 0)
         }));
 
+        // Ensure orderStats has default values
+        const safeOrderStats = {
+            totalRevenue: orderStats?.totalRevenue || 0,
+            pendingOrders: orderStats?.pendingOrders || 0,
+            completedOrders: orderStats?.completedOrders || 0
+        };
+
         res.render('admin/dashboard', {
             title: 'Admin Dashboard',
             totalProducts,
@@ -83,9 +91,9 @@ exports.index = async (req, res) => {
             totalUsers,
             recentOrders: formattedRecentOrders,
             topProducts: formattedTopProducts,
-            totalRevenue: orderStats.totalRevenue.toFixed(2),
-            pendingOrders: orderStats.pendingOrders,
-            completedOrders: orderStats.completedOrders,
+            totalRevenue: safeOrderStats.totalRevenue.toFixed(2),
+            pendingOrders: safeOrderStats.pendingOrders,
+            completedOrders: safeOrderStats.completedOrders,
             monthlySales: formattedMonthlySales
         });
     } catch (error) {
@@ -110,6 +118,7 @@ exports.getProducts = async (req, res) => {
         const formattedProducts = products.map(product => ({
             ...product,
             formatted_price: parseFloat(product.price || 0).toFixed(2),
+            formatted_discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,
             category_name: product.category_name || 'Uncategorized'
         }));
 
@@ -155,19 +164,36 @@ exports.updateProduct = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
+        // Xử lý upload ảnh nếu có
+        if (req.file) {
+            // Lấy thông tin sản phẩm hiện tại
+            const currentProduct = await Product.findById(parseInt(id));
+            
+            // Xóa ảnh cũ nếu tồn tại và không phải là ảnh mặc định
+            if (currentProduct && currentProduct.image_url && !currentProduct.image_url.includes('no-image.jpg')) {
+                const oldImagePath = path.join(__dirname, '../public', currentProduct.image_url);
+                try {
+                    // Kiểm tra file có tồn tại không trước khi xóa
+                    await fs.access(oldImagePath);
+                    await fs.unlink(oldImagePath);
+                } catch (error) {
+                    // Bỏ qua lỗi nếu file không tồn tại
+                    if (error.code !== 'ENOENT') {
+                        console.error('Error deleting old image:', error);
+                    }
+                }
+            }
+
+            // Cập nhật đường dẫn ảnh mới
+            updateData.image_url = `/images/products/${req.file.filename}`;
+        }
+
         // Validate the update data
         const errors = await Product.validate(updateData);
         if (errors) {
-            if (req.xhr || req.headers.accept.includes('application/json')) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation failed',
-                    errors
-                });
-            }
-            return res.status(400).render('admin/products', {
-                title: 'Manage Products',
-                error: 'Validation failed',
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
                 errors
             });
         }
@@ -175,40 +201,31 @@ exports.updateProduct = async (req, res) => {
         // Update the product
         const success = await Product.update(parseInt(id), updateData);
         if (!success) {
-            if (req.xhr || req.headers.accept.includes('application/json')) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Product not found'
-                });
-            }
-            return res.status(404).render('error', {
-                title: 'Error',
+            return res.status(404).json({
+                success: false,
                 message: 'Product not found'
             });
         }
 
-        // Send response based on request type
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.json({
-                success: true,
-                message: 'Product updated successfully'
-            });
-        }
-        
-        req.flash('success', 'Product updated successfully');
-        res.redirect('/admin/products');
+        // Get updated product data
+        const updatedProduct = await Product.findById(parseInt(id));
+
+        // Return success response with updated data
+        return res.json({
+            success: true,
+            message: 'Product updated successfully',
+            product: {
+                ...updatedProduct,
+                formatted_price: parseFloat(updatedProduct.price).toFixed(2),
+                formatted_discount_price: updatedProduct.discount_price ? parseFloat(updatedProduct.discount_price).toFixed(2) : null
+            }
+        });
+
     } catch (error) {
         console.error('Error in updateProduct:', error);
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.status(500).json({
-                success: false,
-                message: 'Error updating product'
-            });
-        }
-        res.status(500).render('error', {
-            title: 'Error',
-            message: 'Error updating product',
-            error: process.env.NODE_ENV === 'development' ? error : {}
+        return res.status(500).json({
+            success: false,
+            message: 'Error updating product'
         });
     }
 };
@@ -548,137 +565,51 @@ exports.deleteUser = async (req, res) => {
 // Analytics
 exports.analytics = async (req, res) => {
     try {
-        // Get sales data for the last 6 months
-        const salesData = await Order.getMonthlySales(6);
-        const formattedSalesData = Order.formatMonthlySalesData(salesData);
-        
-        // Get top 5 selling products
-        const productsData = await OrderItem.getTopSellingProducts(5);
-        const formattedProductsData = OrderItem.formatProductsData(productsData);
+        // Get date range from query params or default to last 30 days
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
 
-        // Calculate total sales for the last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const recentSales = await Order.getSalesByDateRange(thirtyDaysAgo, new Date());
-        const formattedTotalSales = Order.calculateTotalSales(recentSales);
+        // Get sales data
+        const salesData = await Order.getSalesByDateRange(startDate, endDate);
+        const totalSales = await Order.calculateTotalSales(startDate, endDate);
+        const monthlySales = await Order.getMonthlySales(6);
+        const formattedMonthlySales = Order.formatMonthlySalesData(monthlySales);
 
-        // Get order statistics for the last 30 days
-        const orderStats = await Order.getLast30DaysStats();
-
-        // Get user statistics
-        const userStats = await User.getStats();
-
-        // Get product statistics
-        const productStats = await Product.getStats();
+        // Get top products
+        const topProducts = await OrderItem.getTopProducts(5);
+        const formattedTopProducts = OrderItem.formatProductsData(topProducts);
 
         // Get recent orders
         const recentOrders = await Order.getRecentOrders(5);
 
-        // Format chart data for sales
-        const salesChartData = {
-            type: 'line',
-            data: {
-                labels: formattedSalesData.map(item => item.month),
-                datasets: [{
-                    label: 'Monthly Sales',
-                    data: formattedSalesData.map(item => parseFloat(item.total)),
-                    borderColor: '#17a2b8',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    tension: 0.1,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toFixed(2);
-                            }
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        };
-
-        // Format chart data for products
-        const productsChartData = {
-            type: 'bar',
-            data: {
-                labels: formattedProductsData.map(item => item.name),
-                datasets: [{
-                    label: 'Products Sold',
-                    data: formattedProductsData.map(item => parseInt(item.total_quantity)),
-                    backgroundColor: '#28a745',
-                    borderColor: '#28a745',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
+        // Format data for display
+        const formattedData = {
+            totalOrders: totalSales.total_orders || 0,
+            totalRevenue: (totalSales.total_revenue || 0).toFixed(2),
+            averageOrderValue: (totalSales.average_order_value || 0).toFixed(2),
+            monthlySales: formattedMonthlySales,
+            topProducts: formattedTopProducts,
+            recentOrders: recentOrders.map(order => ({
+                id: order.id,
+                customer: order.customer_name || 'Guest',
+                date: new Date(order.created_at).toLocaleDateString(),
+                amount: (order.total_amount || 0).toFixed(2),
+                status: order.status,
+                items: order.item_count || 0,
+                products: order.product_names || 'No products'
+            }))
         };
 
         res.render('admin/analytics', {
-            title: 'Analytics',
-            salesData: formattedSalesData,
-            productsData: formattedProductsData,
-            formattedTotalSales,
-            totalOrders: orderStats.totalOrders,
-            totalRevenue: orderStats.totalRevenue.toFixed(2),
-            pendingOrders: orderStats.pendingOrders,
-            completedOrders: orderStats.completedOrders,
-            totalUsers: userStats.totalUsers,
-            totalAdmins: userStats.totalAdmins,
-            totalCustomers: userStats.totalCustomers,
-            totalProducts: productStats.totalProducts,
-            inStockProducts: productStats.inStockProducts,
-            outOfStockProducts: productStats.outOfStockProducts,
-            totalCategories: productStats.totalCategories,
-            recentOrders,
-            salesChartData: JSON.stringify(salesChartData),
-            productsChartData: JSON.stringify(productsChartData)
+            title: 'Analytics Dashboard',
+            data: formattedData
         });
     } catch (error) {
         console.error('Error in analytics:', error);
         res.status(500).render('error', {
-            title: 'Error',
             message: 'Error loading analytics data',
-            error: process.env.NODE_ENV === 'development' ? error : {}
+            error: error
         });
     }
 };
@@ -895,6 +826,7 @@ exports.getProduct = async (req, res) => {
             name: product.name,
             category_id: product.category_id,
             price: parseFloat(product.price).toFixed(2),
+            discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,
             stock: parseInt(product.stock),
             description: product.description,
             status: product.status,
@@ -914,85 +846,124 @@ exports.getProduct = async (req, res) => {
     }
 };
 
-// Configure multer for image upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public/images/products')
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname)
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png|gif/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only image files are allowed!'));
-    }
-}).single('image');
-
 // Upload product image
-exports.uploadProductImage = (req, res) => {
-    upload(req, res, function (err) {
-        if (err) {
-            console.error('Error uploading image:', err);
-            return res.status(400).json({
-                success: false,
-                message: err.message
-            });
-        }
+exports.uploadProductImage = async (req, res) => {
+    try {
+        upload.single('image')(req, res, async function(err) {
+            if (err) {
+                return res.status(400).json({
+                    success: false,
+                    message: err.message
+                });
+            }
 
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'No file uploaded'
-            });
-        }
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No file uploaded'
+                });
+            }
 
-        // Return the full path that will be stored in the database
-        const imagePath = `/images/products/${req.file.filename}`;
-        
-        res.json({
-            success: true,
-            url: imagePath
+            const productId = req.body.product_id;
+            if (productId) {
+                // Nếu có product_id, thêm ảnh vào database
+                const imageId = await Product.addImage(productId, req.file);
+                const images = await Product.getImages(productId);
+                
+                res.json({
+                    success: true,
+                    message: 'Image uploaded successfully',
+                    image: {
+                        id: imageId,
+                        path: `/images/products/${req.file.filename}`
+                    },
+                    images: images
+                });
+            } else {
+                // Nếu không có product_id, chỉ trả về đường dẫn ảnh
+                res.json({
+                    success: true,
+                    message: 'Image uploaded successfully',
+                    path: `/images/products/${req.file.filename}`
+                });
+            }
         });
-    });
+    } catch (error) {
+        console.error('Error in uploadProductImage:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error uploading image'
+        });
+    }
+};
+
+// Set primary image
+exports.setPrimaryImage = async (req, res) => {
+    try {
+        const { productId, imageId } = req.body;
+        const success = await Product.setPrimaryImage(productId, imageId);
+        
+        if (success) {
+            res.json({
+                success: true,
+                message: 'Primary image updated successfully'
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Image not found'
+            });
+        }
+    } catch (error) {
+        console.error('Error in setPrimaryImage:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating primary image'
+        });
+    }
+};
+
+// Delete image
+exports.deleteImage = async (req, res) => {
+    try {
+        const { imageId } = req.params;
+        const success = await Product.deleteImage(imageId);
+        
+        if (success) {
+            res.json({
+                success: true,
+                message: 'Image deleted successfully'
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Image not found'
+            });
+        }
+    } catch (error) {
+        console.error('Error in deleteImage:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting image'
+        });
+    }
 };
 
 // Get product images
 exports.getProductImages = async (req, res) => {
     try {
-        const imagesDir = path.join(__dirname, '../public/images/products');
+        const { productId } = req.params;
+        const images = await Product.getImages(productId);
         
-        // Create directory if it doesn't exist
-        try {
-            await fs.access(imagesDir);
-        } catch (error) {
-            await fs.mkdir(imagesDir, { recursive: true });
-        }
-        
-        const files = await fs.readdir(imagesDir);
-        
-        const images = files
-            .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
-            .map(file => ({
-                name: file,
-                url: `/images/products/${file}`
-            }));
-
-        res.json(images);
+        res.json({
+            success: true,
+            images: images
+        });
     } catch (error) {
-        console.error('Error getting product images:', error);
+        console.error('Error in getProductImages:', error);
         res.status(500).json({
             success: false,
-            message: 'Error loading images'
+            message: 'Error getting product images'
         });
     }
 };
