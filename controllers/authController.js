@@ -35,7 +35,7 @@ exports.login = async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             req.flash('error', errors.array()[0].msg);
-            return res.redirect('/auth/login');
+            return res.redirect('/login');
         }
 
         // Check if user exists by email or username
@@ -45,8 +45,8 @@ exports.login = async (req, res) => {
         );
 
         if (!users.length) {
-            req.flash('error', 'Invalid email or password');
-            return res.redirect('/auth/login');
+            req.flash('error', 'Invalid email or username or password');
+            return res.redirect('/login');
         }
 
         const user = users[0];
@@ -54,13 +54,11 @@ exports.login = async (req, res) => {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            req.flash('error', 'Invalid email or password');
-            return res.redirect('/auth/login');
             req.flash('error', 'Invalid email or username or password');
             return res.redirect('/login');
         }
 
-        // Set session and req.user
+        // Set session
         req.session.user_id = user.id;
         req.session.user = {
             id: user.id,
@@ -68,7 +66,6 @@ exports.login = async (req, res) => {
             email: user.email,
             role: user.role
         };
-        req.user = req.session.user; // Set req.user for auth middleware
         res.locals.user = req.session.user;
 
         if (req.session.checkoutIntent) {
@@ -82,7 +79,7 @@ exports.login = async (req, res) => {
     } catch (error) {
         console.error('Error in login:', error);
         req.flash('error', 'An error occurred during login. Please try again.');
-        res.redirect('/auth/login');
+        res.redirect('/login');
     }
 };
 
@@ -104,14 +101,14 @@ exports.register = async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             req.flash('error', errors.array()[0].msg);
-            return res.redirect('/auth/register');
+            return res.redirect('/register');
         }
 
         // Check if user exists
         const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUsers.length) {
             req.flash('error', 'This email is already registered');
-            return res.redirect('/auth/register');
+            return res.redirect('/register');
         }
 
         // Hash password
@@ -137,14 +134,14 @@ exports.register = async (req, res) => {
     } catch (error) {
         console.error('Error in register:', error);
         req.flash('error', 'An error occurred during registration. Please try again.');
-        res.redirect('/auth/register');
+        res.redirect('/register');
     }
 };
 
 // Handle logout
 exports.logout = (req, res) => {
     req.session.destroy();
-    res.redirect('/auth/login');
+    res.redirect('/login');
 };
 
 // Show forgot password page
@@ -165,7 +162,7 @@ exports.forgotPassword = async (req, res) => {
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (!users.length) {
             req.flash('error', 'No account found with that email');
-            return res.redirect('/auth/forgot-password');
+            return res.redirect('/forgot-password');
         }
 
         const user = users[0];
@@ -184,7 +181,7 @@ exports.forgotPassword = async (req, res) => {
         );
 
         // Build reset URL
-        const resetUrl = `${process.env.FRONTEND_BASE_URL}/reset-password/${token}`;
+        const resetUrl = `${process.env.FRONTEND_BASE_URL}/auth/reset-password/${token}`;
 
         // Prepare email content
         const message = `
@@ -202,42 +199,15 @@ exports.forgotPassword = async (req, res) => {
         });
 
         req.flash('success', 'Password reset instructions sent to your email');
-        res.redirect('/auth/forgot-password');
+        res.redirect('/forgot-password');
     } catch (error) {
         console.error('Error in forgotPassword:', error);
-        req.flash('error', 'Error processing request');
-        res.redirect('/auth/forgot-password');
         req.flash('error', 'Error processing request. Please try again later.');
         res.redirect('/forgot-password');
     }
 };
 
 // Show reset password page
-exports.showResetPassword = async (req, res) => {
-    try {
-        const { token } = req.params;
-
-        // Check if token is valid
-        const [users] = await pool.query(
-            'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
-            [token]
-        );
-
-        if (!users.length) {
-            req.flash('error', 'Invalid or expired reset token');
-            return res.redirect('/auth/forgot-password');
-        }
-
-        res.render('auth/reset-password', {
-            title: 'Reset Password',
-            token,
-            error: req.flash('error')
-        });
-    } catch (error) {
-        console.error('Error in showResetPassword:', error);
-        req.flash('error', 'Error loading reset password page');
-        res.redirect('/auth/forgot-password');
-    }
 exports.showResetPassword = (req, res) => {
     res.render('auth/reset-password', {
         title: 'Reset Password',
@@ -261,7 +231,7 @@ exports.resetPassword = async (req, res) => {
 
         if (!users.length) {
             req.flash('error', 'Invalid or expired reset token');
-            return res.redirect('/auth/forgot-password');
+            return res.redirect('/forgot-password');
         }
 
         // Hash new password
@@ -275,11 +245,11 @@ exports.resetPassword = async (req, res) => {
         );
 
         req.flash('success', 'Password has been reset');
-        res.redirect('/auth/login');
+        res.redirect('/login');
     } catch (error) {
         console.error('Error in resetPassword:', error);
         req.flash('error', 'Error resetting password');
-        res.redirect('/auth/forgot-password');
+        res.redirect('/forgot-password');
     }
 };
 
