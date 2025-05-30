@@ -15,6 +15,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const sendEmail = require('../helpers/sendEmail'); // import your email helper
 
 // Show login page
 exports.showLogin = (req, res) => {
@@ -28,7 +29,7 @@ exports.showLogin = (req, res) => {
 // Handle login
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
 
         // Validate input
         const errors = validationResult(req);
@@ -37,8 +38,12 @@ exports.login = async (req, res) => {
             return res.redirect('/auth/login');
         }
 
-        // Check if user exists
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        // Check if user exists by email or username
+        const [users] = await pool.query(
+            'SELECT * FROM users WHERE email = ? OR username = ?',
+            [identifier, identifier]
+        );
+
         if (!users.length) {
             req.flash('error', 'Invalid email or password');
             return res.redirect('/auth/login');
@@ -51,6 +56,8 @@ exports.login = async (req, res) => {
         if (!isMatch) {
             req.flash('error', 'Invalid email or password');
             return res.redirect('/auth/login');
+            req.flash('error', 'Invalid email or username or password');
+            return res.redirect('/login');
         }
 
         // Set session and req.user
@@ -64,13 +71,11 @@ exports.login = async (req, res) => {
         req.user = req.session.user; // Set req.user for auth middleware
         res.locals.user = req.session.user;
 
-        // Check if there was a checkout intent
         if (req.session.checkoutIntent) {
             delete req.session.checkoutIntent;
             return res.redirect('/checkout');
         }
 
-        // Redirect to intended page or home
         const returnTo = req.session.returnTo || '/';
         delete req.session.returnTo;
         res.redirect(returnTo);
@@ -151,7 +156,7 @@ exports.showForgotPassword = (req, res) => {
     });
 };
 
-// Handle forgot password
+// Handle forgot password - only ONE function here!
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -163,20 +168,38 @@ exports.forgotPassword = async (req, res) => {
             return res.redirect('/auth/forgot-password');
         }
 
+        const user = users[0];
+
         // Generate reset token
         const token = jwt.sign(
-            { id: users[0].id },
+            { id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Store token in database
+        // Store token and expiry
         await pool.query(
             'UPDATE users SET reset_token = ?, reset_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ?',
-            [token, users[0].id]
+            [token, user.id]
         );
 
-        // TODO: Send reset email
+        // Build reset URL
+        const resetUrl = `${process.env.FRONTEND_BASE_URL}/reset-password/${token}`;
+
+        // Prepare email content
+        const message = `
+            <h2>Password Reset Request</h2>
+            <p>You requested to reset your password. Click the link below to reset it. This link expires in 1 hour.</p>
+            <a href="${resetUrl}">${resetUrl}</a>
+            <p>If you did not request this, please ignore this email.</p>
+        `;
+
+        // Send the email
+        await sendEmail({
+            to: email,
+            subject: 'Password Reset Instructions',
+            html: message,
+        });
 
         req.flash('success', 'Password reset instructions sent to your email');
         res.redirect('/auth/forgot-password');
@@ -184,6 +207,8 @@ exports.forgotPassword = async (req, res) => {
         console.error('Error in forgotPassword:', error);
         req.flash('error', 'Error processing request');
         res.redirect('/auth/forgot-password');
+        req.flash('error', 'Error processing request. Please try again later.');
+        res.redirect('/forgot-password');
     }
 };
 
@@ -213,6 +238,13 @@ exports.showResetPassword = async (req, res) => {
         req.flash('error', 'Error loading reset password page');
         res.redirect('/auth/forgot-password');
     }
+exports.showResetPassword = (req, res) => {
+    res.render('auth/reset-password', {
+        title: 'Reset Password',
+        token: req.params.token,
+        error: req.flash('error'),
+        success: req.flash('success')
+    });
 };
 
 // Handle reset password
@@ -251,25 +283,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// Get login page
-exports.getLogin = (req, res, next) => {
-    res.render('auth/login', {
-        title: 'Login',
-        errors: [],
-        formData: {}
-    });
-};
-
-// Get register page
-exports.getRegister = (req, res, next) => {
-    res.render('auth/register', {
-        title: 'Register',
-        errors: [],
-        formData: {}
-    });
-};
-
-// Get current user
+// Get current user info (optional)
 exports.getCurrentUser = async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
@@ -287,4 +301,4 @@ exports.getCurrentUser = async (req, res) => {
         console.error('Error in getCurrentUser:', error);
         res.status(500).json({ message: 'Server error' });
     }
-}; 
+};

@@ -15,17 +15,37 @@ const { check } = require('express-validator');
 const authController = require('../controllers/authController');
 const { guest } = require('../middleware/auth');
 
-// Authentication routes
-router.get('/login', guest, (req, res) => authController.showLogin(req, res));
-router.post('/login', guest, (req, res) => authController.login(req, res));
-router.get('/register', guest, (req, res) => authController.showRegister(req, res));
-router.post('/register', guest, (req, res) => authController.register(req, res));
-router.get('/logout', (req, res) => authController.logout(req, res));
+// Login routes
+router.get('/login', guest, authController.showLogin);
+router.post('/login', guest, authController.login);
 
-// Password reset routes
-router.get('/forgot-password', guest, (req, res) => authController.showForgotPassword(req, res));
-router.post('/forgot-password', guest, (req, res) => authController.forgotPassword(req, res));
-router.get('/reset-password/:token', guest, (req, res) => authController.showResetPassword(req, res));
-router.post('/reset-password/:token', guest, (req, res) => authController.resetPassword(req, res));
+// Register routes
+router.get('/register', guest, authController.showRegister);
+router.post('/register', guest, authController.register);
 
-module.exports = router; 
+// Logout route
+router.get('/logout', authController.logout);
+
+// Forgot Password routes
+router.get('/forgot-password', guest, authController.showForgotPassword);
+router.post(
+  '/forgot-password',
+  guest,
+  [
+    check('email', 'Please enter a valid email').isEmail().normalizeEmail()
+  ],
+  authController.forgotPassword
+);
+
+// Reset Password routes
+router.get('/reset-password/:token', guest, authController.showResetPassword);
+router.post(
+  '/reset-password/:token',
+  guest,
+  [
+    check('password', 'Password must be at least 6 characters').isLength({ min: 6 })
+  ],
+  authController.resetPassword
+);
+
+module.exports = router;
