@@ -112,32 +112,78 @@
   </div>
 </div>
 
-    <!-- Related Products -->
-    <% if (relatedProducts && relatedProducts.length > 0) { %>
-        <div class="mt-5">
-           <h3 class="mb-4 text-center">You Might Also Like</h3>
-            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3">
-                <% relatedProducts.forEach(product => { %>
-                    <div class="col">
-                        <div class="card h-100 related-product-card">
-                            <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="card-img-top related-product-image" alt="<%= product.name %>">
-                            <div class="card-body font-jack-frost">
-                                <h6 class="card-title"><%= product.name %></h6>
-                                <% if (product.has_discount) { %>
-                                    <p class="mb-0 text-decoration-line-through text-muted small">$<%= product.price %></p>
-                                    <p class="text-danger fw-bold">$<%= product.discount_price %></p>
-                                <% } else { %>
-                                    <p class="fw-bold">$<%= product.price %></p>
-                                <% } %>
-                                <a href="/products/<%= product.id %>" class="btn btn-outline-primary btn-sm mt-2">View</a>
-                            </div>
-                        </div>
-                    </div>
-                <% }); %>
+<!-- Related Products -->
+<% if (relatedProducts && relatedProducts.length > 0) { %>
+  <section class="related-products-outer-section pt-5 pb-3">
+    <div class="container">
+      <h2 class="text-center mb-4 section-title-new-arrivals fw-bold">
+        YOU MIGHT ALSO LIKE
+      </h2>
+    </div>
+
+    <div class="new-arrivals-striped-background font-jack-frost">
+      <div class="container py-4">
+        <div class="row new-arrivals-row flex-nowrap overflow-auto">
+          <% relatedProducts.forEach(product => {
+            let currentPrice = parseFloat(product.discount_price) || parseFloat(product.price);
+            let originalPrice = parseFloat(product.price);
+            let discount = product.discount_price ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
+            let rating = parseFloat(product.rating || (Math.random() * 1.0 + 4.0).toFixed(1));
+            let fullStars = Math.floor(rating);
+            let halfStar = rating % 1 >= 0.4 && rating % 1 < 0.9;
+            let emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+          %>
+            <div class="new-arrival-card-col">
+              <a href="/products/<%= product.id %>" class="card new-arrival-card text-decoration-none text-dark" style="cursor: pointer;">
+                <div class="new-arrival-image-container">
+                  <img
+                    src="<%= product.image_url || '/images/products/no-image.jpg' %>"
+                    class="new-arrival-img"
+                    alt="<%= product.name %>"
+                  />
+                </div>
+                <div class="card-body new-arrival-card-body d-flex flex-column">
+                  <h5 class="product-name-new-arrival">
+                    <%= product.name ? product.name.toUpperCase() : 'PRODUCT NAME' %>
+                  </h5>
+
+                  <div class="product-rating-new-arrival mb-2">
+                    <% for (let i = 0; i < fullStars; i++) { %>
+                      <i class="fas fa-star"></i>
+                    <% } %>
+                    <% if (halfStar) { %>
+                      <i class="fas fa-star-half-alt"></i>
+                    <% } %>
+                    <% for (let i = 0; i < emptyStars; i++) { %>
+                      <i class="far fa-star"></i>
+                    <% } %>
+                    <span class="rating-text-new-arrival"><%= rating %>/5</span>
+                  </div>
+
+                  <div class="product-price-new-arrival mt-auto">
+                    <span class="current-price-new-arrival">
+                      $<%= currentPrice.toFixed(0) %>
+                    </span>
+                    <% if (discount > 0) { %>
+                      <span class="original-price-display-new-arrival">
+                        $<%= originalPrice.toFixed(0) %>
+                      </span>
+                      <span class="discount-percentage-badge-new-arrival">
+                        -<%= discount %>%
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+              </a>
             </div>
+          <% }); %>
         </div>
-    <% } %>
-</div>
+      </div>
+    </div>
+  </section>
+<% } %>
+
+
 <!-- Toast Container -->
 <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
 
