@@ -2,303 +2,175 @@
  * Shopping Cart Page
  * Purpose: Display and manage shopping cart
  * Used by: cartController.index
- * Features:
- * - Cart items list
- * - Quantity adjustment
- * - Price calculations
- * - Checkout button
- * - Save for later
- -->
+-->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %> - Online Shop</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .cart-item {
-            border-bottom: 1px solid #eee;
-            padding: 15px 0;
-        }
-        .cart-item:last-child {
-            border-bottom: none;
-        }
-        .cart-item img {
-            max-width: 100px;
-            height: auto;
-        }
-        .quantity-input {
-            width: 70px;
-        }
-        .cart-summary {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-        }
-        .empty-cart {
-            text-align: center;
-            padding: 50px 0;
-        }
-        .empty-cart i {
-            font-size: 4rem;
-            color: #6c757d;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/cart.css" />
+  </head>
+  <body>
     <%- include('../partials/navbar') %>
 
     <div class="container py-5">
-        <h1 class="text-center mb-5">Shopping Cart</h1>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 font-jack-frost">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Cart</li>
+          </ol>
+        </nav>
+        <h2 class="cart-title">Your Cart</h2>
+      </div>
 
-        <% if (cartItems.length === 0) { %>
-            <div class="empty-cart">
-                <i class="fas fa-shopping-cart"></i>
-                <h3>Your cart is empty</h3>
-                <p class="text-muted">Add some products to your cart to see them here</p>
-                <a href="/products" class="btn btn-primary mt-3">Continue Shopping</a>
-            </div>
-        <% } else { %>
-            <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% cartItems.forEach(item => { %>
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <img src="<%= item.image %>" alt="<%= item.name %>" class="img-thumbnail me-3" style="width: 80px;">
-                                                <div>
-                                                    <h5 class="mb-0"><%= item.name %></h5>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>$<%= item.price %></td>
-                                        <td>
-                                            <div class="input-group" style="width: 120px;">
-                                                <button class="btn btn-outline-secondary btn-sm" data-product-id="<%= item.productId %>" data-action="decrease">-</button>
-                                                <input type="number" class="form-control form-control-sm text-center quantity-input" 
-                                                       value="<%= item.quantity %>" min="1" 
-                                                       data-product-id="<%= item.productId %>">
-                                                <button class="btn btn-outline-secondary btn-sm" data-product-id="<%= item.productId %>" data-action="increase">+</button>
-                                            </div>
-                                        </td>
-                                        <td>$<%= item.total %></td>
-                                        <td>
-                                            <button class="btn btn-danger btn-sm" data-product-id="<%= item.productId %>" data-action="remove">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <% }); %>
-                            </tbody>
-                        </table>
+      <% if (cartItems.length === 0) { %>
+      <div class="empty-cart text-center font-jack-frost">
+        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+        <h3>Your cart is empty</h3>
+        <p class="text-muted">
+          Add some products to your cart to see them here
+        </p>
+        <a href="/products" class="btn btn-primary mt-3">Continue Shopping</a>
+      </div>
+      <% } else { %>
+      <div class="row g-4 font-jack-frost">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-body p-4">
+              <% cartItems.forEach(item => { %>
+              <div class="cart-item position-relative p-3 border rounded mb-4">
+                <button
+                  class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
+                  data-product-id="<%= item.productId %>"
+                  data-action="remove"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+
+                <div class="d-flex align-items-center">
+                  <div class="cart-image-wrapper bg-light me-3">
+                    <img
+                      src="<%= item.image %>"
+                      alt="<%= item.name %>"
+                      class="img-fluid"
+                    />
+                  </div>
+                  <div>
+                    <h5 class="fw-bold mb-1"><%= item.name %></h5>
+                    <p class="mb-1 text-muted">Size: <%= item.size %></p>
+                    <p class="mb-1 text-muted">Color: <%= item.color %></p>
+                  </div>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-center w-100"
+                >
+                  <p class="fw-bold fs-4 mb-0 text-dark">$<%= item.price %></p>
+                  <div class="quantity-control">
+                    <div class="quantity-box d-flex align-items-center">
+                      <div
+                        class="minus"
+                        data-product-id="<%= item.productId %>"
+                        data-action="decrease"
+                      ></div>
+                      <div class="number px-3"><%= item.quantity %></div>
+                      <div
+                        class="plus"
+                        data-product-id="<%= item.productId %>"
+                        data-action="increase"
+                      ></div>
                     </div>
-
-                    <div class="row mt-4">
-                        <div class="col-md-6">
+                  </div>
+                </div>
+              </div>
+              <% }); %>
+              <div class="col-md-6">
                             <button class="btn btn-outline-danger" data-action="clear">
                                 <i class="fas fa-trash me-2"></i>Clear Cart
                             </button>
                         </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Order Summary</h5>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Subtotal:</span>
-                                        <span>$<%= subtotal %></span>
-                                    </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Shipping:</span>
-                                        <span>$<%= shipping %></span>
-                                    </div>
-                                    <hr>
-                                    <div class="d-flex justify-content-between mb-3">
-                                        <strong>Total:</strong>
-                                        <strong>$<%= total %></strong>
-                                    </div>
-                                    <a href="/checkout" class="btn btn-primary w-100" id="checkoutBtn">
-                                        Proceed to Checkout
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-        <% } %>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="cart-summary p-4 border rounded">
+            <h5 class="fw-bold mb-3">Order Summary</h5>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span>$<%= subtotal %></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Shipping:</span>
+              <span>$<%= shipping %></span>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Total:</strong>
+              <strong>$<%= total %></strong>
+            </div>
+
+            <!-- Apply Coupon -->
+            <div
+              class="d-flex align-items-center gap-2 mb-4 apply-coupon-box"
+              style="width: 100%"
+            >
+              <!-- Promo Code Input -->
+              <div
+                class="d-flex align-items-center rounded-pill px-3 py-2 flex-grow-1 promo-input"
+                style="background-color: #f8f9fa; border: 1px solid #ced4da"
+              >
+                <div class="icon-box me-2">
+                  <i class="fas fa-tag text-muted"></i>
+                </div>
+                <input
+                  type="text"
+                  class="form-control border-0 bg-transparent shadow-none promo-code-input"
+                  placeholder="Add promo code"
+                  style="flex-grow: 1"
+                />
+              </div>
+
+              <!-- Apply Button with fixed width -->
+              <button
+                class="btn btn-dark text-white rounded-pill px-4 py-2 apply-btn"
+                type="button"
+                style="white-space: nowrap; flex-shrink: 0; width: 120px"
+              >
+                Apply
+              </button>
+            </div>
+
+            <!-- Checkout Button -->
+            <a
+              href="/checkout"
+              class="btn w-100 text-white fw-semibold d-flex justify-content-center align-items-center gap-2 checkout-btn"
+            >
+              Go to Checkout
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      <% } %>
     </div>
 
-    <!-- Footer -->
     <%- include('../partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/cart.js"></script>
-    <script>
-        // Add to cart functionality
-        document.querySelectorAll('.add-to-cart').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const button = e.target.closest('.add-to-cart');
-                const productId = button.dataset.productId;
-                const quantity = 1;
-
-                try {
-                    const response = await fetch(`/cart/add/${productId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ quantity })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                        return;
-                    }
-                    
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        throw new Error(data.message);
-                    }
-                } catch (error) {
-                    alert(error.message);
-                }
-            });
-        });
-
-        // Quantity adjustment
-        document.querySelectorAll('.quantity-input').forEach(input => {
-            input.addEventListener('change', async (e) => {
-                const productId = e.target.dataset.productId;
-                const quantity = parseInt(e.target.value);
-
-                try {
-                    const response = await fetch(`/cart/update/${productId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ quantity })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        throw new Error(data.message);
-                    }
-                } catch (error) {
-                    alert(error.message);
-                }
-            });
-        });
-
-        // Remove item
-        document.querySelectorAll('[data-action="remove"]').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const productId = button.dataset.productId;
-
-                try {
-                    const response = await fetch(`/cart/remove/${productId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        throw new Error(data.message);
-                    }
-                } catch (error) {
-                    alert(error.message);
-                }
-            });
-        });
-
-        // Clear cart
-        document.querySelector('[data-action="clear"]').addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            if (!confirm('Are you sure you want to clear your cart?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/cart/clear', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    throw new Error(data.message);
-                }
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-
-        // Checkout button
-        document.getElementById('checkoutBtn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            try {
-                const response = await fetch('/checkout', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    const data = await response.json();
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        window.location.href = '/checkout';
-                    }
-                }
-            } catch (error) {
-                console.error('Checkout error:', error);
-                window.location.href = '/checkout';
-            }
-        });
-    </script>
-</body>
-</html> 
+  </body>
+</html>

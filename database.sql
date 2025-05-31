@@ -153,3 +153,13 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE coupons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_type ENUM('percent', 'fixed') NOT NULL,
+    discount_value DECIMAL(10, 2) NOT NULL,
+    expires_at DATETIME,
+    usage_limit INT DEFAULT NULL,
+    times_used INT DEFAULT 0
+);

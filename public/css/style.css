@@ -657,5 +657,89 @@ input[type="number"]::-webkit-outer-spin-button {
     border: none !important;
   }
 
-  
+.cart-image-wrapper {
+  width: 80px;
+  height: 80px;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cart-image-wrapper img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.quantity-box {
+  padding: 12px 20px;
+  background: #F0F0F0;
+  border-radius: 62px;
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.quantity-box .minus,
+.quantity-box .plus {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  cursor: pointer;
+}
+
+.quantity-box .minus::before {
+  content: '';
+  width: 15.62px;
+  height: 1.88px;
+  background: black;
+  position: absolute;
+  left: 2.19px;
+  top: 9.06px;
+}
+
+.quantity-box .plus::before {
+  content: '';
+  width: 15.62px;
+  height: 1.88px;
+  background: black;
+  position: absolute;
+  left: 2.19px;
+  top: 9.06px;
+}
+
+.quantity-box .plus::after {
+  content: '';
+  height: 15.62px;
+  width: 1.88px;
+  background: black;
+  position: absolute;
+  left: 9.06px;
+  top: 2.19px;
+}
+
+.quantity-box .number {
+  font-size: 14px;
+  color: black;
+}
+
+.checkout-btn {
+  background-color: black;
+  border-radius: 16px;
+  padding: 12px 20px;
+  transition: background 0.3s ease;
+}
+
+.checkout-btn:hover {
+  background-color: #333;
+}
+
+  .breadcrumb-item a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+
 /* your existing verified-dot and feedback-text styles */

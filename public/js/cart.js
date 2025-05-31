@@ -1,6 +1,5 @@
-// Handle Add to Cart functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle all Add to Cart buttons
+    // Add to Cart buttons (assuming elsewhere)
     document.querySelectorAll('.add-to-cart').forEach(button => {
         button.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -10,27 +9,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(form.action, {
                     method: 'POST',
                     body: new FormData(form),
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 const data = await response.json();
                 
                 if (data.redirect) {
-                    // Redirect to login page if not authenticated
                     window.location.href = data.redirect;
                 } else if (data.success) {
-                    // Update cart count in navbar
                     const cartCountElement = document.querySelector('.cart-count');
-                    if (cartCountElement) {
-                        cartCountElement.textContent = data.cartCount;
-                    }
-                    
-                    // Show success message
+                    if (cartCountElement) cartCountElement.textContent = data.cartCount;
                     showNotification('Success', data.message, 'success');
                 } else {
-                    // Show error message
                     showNotification('Error', data.message, 'error');
                 }
             } catch (error) {
@@ -46,44 +36,48 @@ document.addEventListener('DOMContentLoaded', function() {
             const action = this.dataset.action;
             const productId = this.dataset.productId;
 
+            console.log('Action:', action, 'ProductId:', productId);
+
+            if (!productId && action !== 'clear') {
+                console.error('Missing productId for action:', action);
+                return;
+            }
+
+            const container = this.closest('.cart-item');
+
             switch(action) {
-                case 'decrease':
-                    const currentQty = parseInt(this.parentElement.querySelector('.quantity-input').value);
-                    if (currentQty > 1) {
-                        updateQuantity(productId, currentQty - 1);
-                    }
+                case 'decrease': {
+                    const quantityInput = container.querySelector('.quantity-input');
+                    const currentQty = parseInt(quantityInput.value);
+                    if (currentQty > 1) updateQuantity(productId, currentQty - 1);
                     break;
-                case 'increase':
-                    const currentQty2 = parseInt(this.parentElement.querySelector('.quantity-input').value);
-                    updateQuantity(productId, currentQty2 + 1);
+                }
+                case 'increase': {
+                    const quantityInput = container.querySelector('.quantity-input');
+                    const currentQty = parseInt(quantityInput.value);
+                    updateQuantity(productId, currentQty + 1);
                     break;
+                }
                 case 'remove':
-                    if (confirm('Are you sure you want to remove this item?')) {
-                        removeItem(productId);
-                    }
+                    if (confirm('Are you sure you want to remove this item?')) removeItem(productId);
                     break;
                 case 'clear':
-                    if (confirm('Are you sure you want to clear your cart?')) {
-                        clearCart();
-                    }
+                    if (confirm('Are you sure you want to clear your cart?')) clearCart();
                     break;
             }
         });
     });
 
-    // Handle quantity input changes
+    // Quantity input change handler
     document.querySelectorAll('.quantity-input').forEach(input => {
         input.addEventListener('change', function() {
             const productId = this.dataset.productId;
             const quantity = parseInt(this.value);
-            if (quantity >= 1) {
-                updateQuantity(productId, quantity);
-            }
+            if (quantity >= 1) updateQuantity(productId, quantity);
         });
     });
 });
 
-// Notification function
 function showNotification(title, message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show`;
@@ -92,7 +86,6 @@ function showNotification(title, message, type = 'info') {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
     
-    // Add to notification container or create one if it doesn't exist
     let container = document.querySelector('.notification-container');
     if (!container) {
         container = document.createElement('div');
@@ -102,29 +95,20 @@ function showNotification(title, message, type = 'info') {
     
     container.appendChild(notification);
     
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
 }
 
-// Update quantity
 function updateQuantity(productId, quantity) {
     fetch(`/cart/update/${productId}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ quantity })
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
         if (data.success) {
             showNotification('Success', data.message, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            setTimeout(() => location.reload(), 1000);
         } else {
             showNotification('Error', data.message, 'error');
         }
@@ -135,21 +119,16 @@ function updateQuantity(productId, quantity) {
     });
 }
 
-// Remove item
 function removeItem(productId) {
     fetch(`/cart/remove/${productId}`, {
         method: 'DELETE',
-        headers: {
-            'Accept': 'application/json'
-        }
+        headers: { 'Accept': 'application/json' }
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
         if (data.success) {
             showNotification('Success', data.message, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            setTimeout(() => location.reload(), 1000);
         } else {
             showNotification('Error', data.message, 'error');
         }
@@ -160,21 +139,16 @@ function removeItem(productId) {
     });
 }
 
-// Clear cart
 function clearCart() {
     fetch('/cart/clear', {
         method: 'DELETE',
-        headers: {
-            'Accept': 'application/json'
-        }
+        headers: { 'Accept': 'application/json' }
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
         if (data.success) {
             showNotification('Success', data.message, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            setTimeout(() => location.reload(), 1000);
         } else {
             showNotification('Error', data.message, 'error');
         }
@@ -183,4 +157,49 @@ function clearCart() {
         console.error('Error:', error);
         showNotification('Error', 'Error clearing cart', 'error');
     });
-} 
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const applyBtn = document.querySelector('.apply-btn');
+  const input = document.querySelector('.promo-code-input');
+
+  if (applyBtn && input) {
+    applyBtn.addEventListener('click', async () => {
+      const code = input.value.trim();
+      if (!code) {
+        showToast('⚠️ Please enter a coupon code.', 'danger');
+        return;
+      }
+
+      applyBtn.disabled = true;
+      const originalText = applyBtn.innerHTML;
+      applyBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking...`;
+
+      try {
+        const res = await fetch('/apply-coupon', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ code }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          // Optionally store coupon data in sessionStorage/localStorage
+          // localStorage.setItem('couponDiscount', data.discount);
+        } else {
+          showToast(data.message, 'danger');
+        }
+      } catch (err) {
+        showToast('❌ Failed to apply coupon.', 'danger');
+        console.error(err);
+      } finally {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = originalText;
+      }
+    });
+  }
+});
