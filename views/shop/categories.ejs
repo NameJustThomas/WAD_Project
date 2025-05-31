@@ -1,25 +1,9 @@
 <!--
  * Categories Listing Page
  * Purpose: Display product categories
- * Used by: categoryController.index
- * Features:
- * - Category grid/list
- * - Category images
- * - Product counts
- * - Category description
- * - Navigation menu
+ * Layout: Styled like the "Browse by Dress Style" section
  -->
 
-<!-- 
-    Purpose: Display list of all categories
-    Used by: categoryController.index
-    Route: GET /categories
-    Features:
-    - Shows all categories in a grid layout
-    - Each category shows: name, description, product count
-    - Search functionality for categories
-    - Links to individual category pages
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,61 +15,89 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+
+    <%- include('../partials/topbar') %>
     <%- include('../partials/navbar') %>
 
-    <div class="container py-5">
-        <h1 class="text-center mb-5">Categories</h1>
+    <!-- Categories -->
+    <section class="categories-section py-5">
+        <div class="container bg-light p-4 rounded-3 shadow-sm">
+            <h2 class="text-center mb-4 fw-bold">Browse by Dress Style</h2>
 
-        <!-- Search Bar -->
-        <div class="row mb-4">
-            <div class="col-md-6 mx-auto">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search categories..." value="<%= searchQuery || '' %>">
-                    <button class="btn btn-primary" type="submit" form="searchForm">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <form id="searchForm" class="d-none"></form>
-
-        <!-- Categories Grid -->
-        <div class="row">
-            <% categories.forEach(category => { %>
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        <% if (category.image) { %>
-                            <img src="<%= category.image %>" class="card-img-top" alt="<%= category.name %>">
-                        <% } %>
-                        <div class="card-body text-center">
-                            <h5 class="card-title"><%= category.name %></h5>
-                            <p class="card-text"><%= category.description %></p>
-                            <p class="card-text"><small class="text-muted"><%= category.product_count %> products</small></p>
-                            <a href="/categories/<%= category.id %>" class="btn btn-primary">View Products</a>
+            <div class="row gx-4 gy-4 justify-content-center align-items-center">
+                <% if (categories.length >= 8) { %>
+                    <!-- First Row -->
+                    <div class="d-flex justify-content-center category-row flex-wrap">
+                        <div class="category-box small-box mx-2 my-2">
+                            <a href="/categories/<%= categories[0].id %>" class="category-link">
+                                <h4 class="category-title">CASUAL</h4>
+                                <img src="<%= categories[0].image || '/images/casual.jpg' %>" class="img-fluid category-img" alt="Casual" />
+                            </a>
+                        </div>
+                        <div class="category-box large-box mx-2 my-2">
+                            <a href="/categories/<%= categories[1].id %>" class="category-link">
+                                <h4 class="category-title">FORMAL</h4>
+                                <img src="<%= categories[1].image || '/images/formal.jpg' %>" class="img-fluid category-img" alt="Formal" />
+                            </a>
                         </div>
                     </div>
-                </div>
-            <% }); %>
-        </div>
-    </div>
 
-    <!-- Footer -->
+                    <!-- Second Row -->
+                    <div class="d-flex justify-content-center category-row flex-wrap">
+                        <div class="category-box large-box mx-2 my-2">
+                            <a href="/categories/<%= categories[2].id %>" class="category-link">
+                                <h4 class="category-title">PARTY</h4>
+                                <img src="<%= categories[2].image || '/images/party.jpg' %>" class="img-fluid category-img" alt="Party" />
+                            </a>
+                        </div>
+                        <div class="category-box small-box mx-2 my-2">
+                            <a href="/categories/<%= categories[3].id %>" class="category-link">
+                                <h4 class="category-title">GYM</h4>
+                                <img src="<%= categories[3].image || '/images/gym.jpg' %>" class="img-fluid category-img" alt="Gym" />
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Third Row -->
+                    <div class="d-flex justify-content-center category-row flex-wrap">
+                        <div class="category-box small-box mx-2 my-2">
+                            <a href="/categories/<%= categories[4].id %>" class="category-link">
+                                <h4 class="category-title">SUMMER</h4>
+                                <img src="<%= categories[4].image || '/images/summer.jpg' %>" class="img-fluid category-img" alt="Summer" />
+                            </a>
+                        </div>
+                        <div class="category-box large-box mx-2 my-2">
+                            <a href="/categories/<%= categories[5].id %>" class="category-link">
+                                <h4 class="category-title">WINTER</h4>
+                                <img src="<%= categories[5].image || '/images/winter.jpg' %>" class="img-fluid category-img" alt="Winter" />
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Fourth Row -->
+                    <div class="d-flex justify-content-center category-row flex-wrap">
+                        <div class="category-box large-box mx-2 my-2">
+                            <a href="/categories/<%= categories[6].id %>" class="category-link">
+                                <h4 class="category-title">STREET</h4>
+                                <img src="<%= categories[6].image || '/images/street.jpg' %>" class="img-fluid category-img" alt="Street" />
+                            </a>
+                        </div>
+                        <div class="category-box small-box mx-2 my-2">
+                            <a href="/categories/<%= categories[7].id %>" class="category-link">
+                                <h4 class="category-title">VINTAGE</h4>
+                                <img src="<%= categories[7].image || '/images/vintage.jpg' %>" class="img-fluid category-img" alt="Vintage" />
+                            </a>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <p class="text-center">Not enough categories to display the full layout. Please add more categories.</p>
+                <% } %>
+            </div>
+        </div>
+    </section>
+
     <%- include('../partials/footer') %>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Search functionality
-        document.getElementById('searchForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const searchQuery = document.getElementById('searchInput').value;
-            const url = new URL(window.location.href);
-            if (searchQuery) {
-                url.searchParams.set('search', searchQuery);
-            } else {
-                url.searchParams.delete('search');
-            }
-            window.location.href = url.toString();
-        });
-    </script>
 </body>
-</html> 
+</html>

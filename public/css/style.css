@@ -382,7 +382,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .product-name-new-arrival {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   color: #222;
@@ -448,7 +448,8 @@ input[type="number"]::-webkit-outer-spin-button {
   border-radius: 30px;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease;
 }
 .btn-view-all-new-arrivals:hover {
   background-color: #f0f0f0;
@@ -566,7 +567,7 @@ input[type="number"]::-webkit-outer-spin-button {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .custom-tabs-wrapper {
-  font-family: 'Integral CF', sans-serif;
+  font-family: "Integral CF", sans-serif;
 }
 
 .custom-tab-links .tab-btn {
@@ -584,7 +585,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .custom-tab-links .tab-btn.active::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   bottom: -2px;
@@ -627,35 +628,35 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: 16px;
 }
 
-  #detailTabs {
-    width: 1240px;
-    margin: 0 auto; /* center horizontally */
-    border-bottom: 4px solid black; /* black bottom bar under the whole tab container */
-  }
+#detailTabs {
+  width: 1240px;
+  margin: 0 auto; /* center horizontally */
+  border-bottom: 4px solid black; /* black bottom bar under the whole tab container */
+}
 
-  /* Tab link default styles */
-  #detailTabs .nav-link {
-    color: grey;
-    font-weight: bold;
-    font-family: 'Jack Frost', cursive; /* assuming you have this font */
-    transition: color 0.3s ease; /* smooth color transition */
-  }
+/* Tab link default styles */
+#detailTabs .nav-link {
+  color: grey;
+  font-weight: bold;
+  font-family: "Jack Frost", cursive; /* assuming you have this font */
+  transition: color 0.3s ease; /* smooth color transition */
+}
 
-  /* On hover - animate color to black */
-  #detailTabs .nav-link:hover {
-    color: black;
-  }
+/* On hover - animate color to black */
+#detailTabs .nav-link:hover {
+  color: black;
+}
 
-  /* Active tab title is black */
-  #detailTabs .nav-link.active {
-    color: black;
-  }
+/* Active tab title is black */
+#detailTabs .nav-link.active {
+  color: black;
+}
 
-  /* Remove default bootstrap active underline */
-  #detailTabs .nav-link.active, 
-  #detailTabs .nav-link {
-    border: none !important;
-  }
+/* Remove default bootstrap active underline */
+#detailTabs .nav-link.active,
+#detailTabs .nav-link {
+  border: none !important;
+}
 
 .cart-image-wrapper {
   width: 80px;
@@ -676,7 +677,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .quantity-box {
   padding: 12px 20px;
-  background: #F0F0F0;
+  background: #f0f0f0;
   border-radius: 62px;
   display: inline-flex;
   align-items: center;
@@ -692,7 +693,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .quantity-box .minus::before {
-  content: '';
+  content: "";
   width: 15.62px;
   height: 1.88px;
   background: black;
@@ -702,7 +703,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .quantity-box .plus::before {
-  content: '';
+  content: "";
   width: 15.62px;
   height: 1.88px;
   background: black;
@@ -712,7 +713,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .quantity-box .plus::after {
-  content: '';
+  content: "";
   height: 15.62px;
   width: 1.88px;
   background: black;
@@ -737,9 +738,127 @@ input[type="number"]::-webkit-outer-spin-button {
   background-color: #333;
 }
 
-  .breadcrumb-item a {
-    color: #000 !important;
-    text-decoration: none !important;
-  }
+.breadcrumb-item a {
+  color: #000 !important;
+  text-decoration: none !important;
+}
 
 /* your existing verified-dot and feedback-text styles */
+/* Sidebar filter styles */
+.filter-sidebar {
+  border-right: 1px solid #ddd;
+}
+
+.filter-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+}
+
+/* Color dots */
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+}
+
+/* Size box */
+.size-badge {
+  font-size: 14px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.size-badge:hover {
+  background-color: #e2e6ea;
+}
+
+/* Product card */
+.product-card .card-img-top {
+  height: 200px;
+  object-fit: contain;
+  padding: 10px;
+}
+
+.product-card .card-title {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.pagination-container {
+  padding-top: 1rem;
+}
+
+.filter-label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+}
+.size-badge {
+  background-color: #fff;
+  cursor: pointer;
+}
+.product-card img {
+  background-color: #f2f2f2;
+  object-fit: cover;
+  height: 250px;
+}
+.product-card .card-body {
+  padding: 1rem 0.5rem;
+}
+.pagination-container button {
+  min-width: 120px;
+}
+.filter-sidebar input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+.filter-sidebar {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  padding-right: 3rem;
+}
+.btn-dark {
+  border-radius: 0.3rem;
+}
+
+.category-products-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  gap: 1rem;
+  justify-content: center; /* centers the row items horizontally */
+  scroll-padding-left: 1rem;
+  scroll-padding-right: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+
+.category-products-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.category-products-row::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.category-product-card-col {
+  flex: 0 0 auto; /* fixed width, no shrinking */
+  width: 180px; /* Adjust card width to your liking */
+  /* Optional styling to match new arrivals */
+  margin-bottom: 1rem;
+}
+
+.text-primary {
+  color: black;
+}

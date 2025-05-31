@@ -12,91 +12,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - Online Shop</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Online Shop</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .size-badge {
+      cursor: pointer;
+      border: 1px solid #000;
+      transition: background-color 0.2s;
+      border-radius: 2rem;
+    }
+    .size-badge.active {
+      background-color: #000;
+      color: #fff;
+    }
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .btn {
+      border-radius: 2rem !important;
+    }
+  </style>
 </head>
 <body>
-    <%- include('../partials/navbar') %>
+  <%- include('../partials/topbar') %>
+  <%- include('../partials/navbar') %>
 
-    <div class="container py-5">
-        <h1 class="text-center mb-5"><%= category.name %></h1>
-        <p class="text-center mb-4"><%= category.description %></p>
+  <div class="container-fluid py-4 px-lg-5">
+    <div class="row">
+      <!-- Sidebar Filters -->
+      <aside class="col-lg-3 mb-4 filter-sidebar">
+        <h5 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Filters</h5>
 
-        <!-- Search Bar -->
-        <div class="row mb-4">
-            <div class="col-md-6 mx-auto">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search products..." value="<%= searchQuery || '' %>">
-                    <button class="btn btn-primary" type="submit" form="searchForm">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
+        <form method="GET" action="">
+          <div class="mb-4">
+            <div class="filter-label">Type</div>
+            <% ['T-Shirts','Shirts','Shorts','Hoodie','Jeans'].forEach(type => { %>
+              <div class="font-jack-frost"><input type="checkbox" name="type" value="<%= type %>"> <%= type %></div>
+            <% }); %>
+          </div>
+
+          <div class="mb-4">
+            <div class="filter-label font-jack-frost">Price: $<span id="priceValue">250</span></div>
+            <input type="range" class="form-range" name="price" min="0" max="500" value="250" id="priceRange">
             </div>
-        </div>
-        <form id="searchForm" class="d-none"></form>
 
-        <!-- Products Grid -->
+          <div class="mb-4">
+            <div class="filter-label">Colors</div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <% ['#f00','#f90','#ff0','#0f0','#00f','#90f','#000','#fff'].forEach(color => { %>
+                <div class="color-dot" style="background-color: <%= color %>"></div>
+              <% }); %>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="filter-label">Size</div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <% ['XX-Small','X-Small','Small','Medium','Large','X-Large','XX-Large','3X-Large'].forEach(size => { %>
+                <span class="border px-2 py-1 size-badge font-jack-frost" data-size="<%= size %>"><%= size %></span>
+              <% }); %>
+              <input type="hidden" name="size" id="selectedSize">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="filter-label">Dress Style</div>
+            <% ['Casual','Formal','Party','Gym'].forEach(style => { %>
+              <div><input type="checkbox" name="style" value="<%= style %>"> <%= style %></div>
+            <% }); %>
+          </div>
+
+          <button type="submit" class="btn btn-outline-dark w-100 border">Apply Filter</button>
+        </form>
+      </aside>
+
+      <!-- Main Content -->
+      <section class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-2 font-jack-frost">
+          <h4 class="fw-bold text-uppercase m-0"><%= category.name %></h4>
+          <small>Showing 1-10 of 100 products &nbsp;&nbsp; Sort by: <b>Most Popular</b></small>
+        </div>
+
         <div class="row">
-            <% if (products && products.length > 0) { %>
-                <% products.forEach(product => { %>
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <% if (product.image_url) { %>
-                                <img src="<%= product.image_url %>" class="card-img-top" alt="<%= product.name %>">
-                            <% } else { %>
-                                <img src="/images/products/no-image.jpg" class="card-img-top" alt="<%= product.name %>">
-                            <% } %>
-                            <div class="card-body">
-                                <h5 class="card-title"><%= product.name %></h5>
-                                <p class="card-text"><%= product.description %></p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <% if (product.discount_price) { %>
-                                        <div>
-                                            <span class="text-decoration-line-through text-muted"><%= product.formatted_price %></span>
-                                            <span class="text-danger ms-2"><%= product.formatted_discount_price %></span>
-                                        </div>
-                                    <% } else { %>
-                                        <span class="text-primary"><%= product.formatted_price %></span>
-                                    <% } %>
-                                    <a href="/products/<%= product.id %>" class="btn btn-primary">View Details</a>
-                                </div>
-                            </div>
-                        </div>
+          <% if (products && products.length > 0) { %>
+            <% products.forEach(product => { %>
+              <div class="col-sm-6 col-md-4 mb-4">
+                <a href="/products/<%= product.id %>" class="text-decoration-none text-dark">
+                  <div class="card product-card h-100 font-jack-frost">
+                    <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="card-img-top" alt="<%= product.name %>">
+                    <div class="card-body text-center">
+                      <h6 class="card-title fw-bold text-uppercase"><%= product.name %></h6>
+                      <div class="mb-1">
+                        <small><i class="fas fa-star text-warning"></i> 4.5/5</small>
+                      </div>
+                      <div class="d-flex justify-content-center align-items-center gap-2">
+                        <% if (product.discount_price) { %>
+                          <small class="text-muted text-decoration-line-through">$<%= product.original_price %></small>
+                          <strong class="text-danger">$<%= product.discount_price %></strong>
+                          <span class="badge bg-danger">-20%</span>
+                        <% } else { %>
+                          <strong>$<%= product.original_price %></strong>
+                        <% } %>
+                      </div>
                     </div>
-                <% }); %>
-            <% } else { %>
-                <div class="col-12 text-center">
-                    <p>No products found in this category.</p>
-                </div>
-            <% } %>
+                  </div>
+                </a>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="col-12 text-center">
+              <p>No products found in this category.</p>
+            </div>
+          <% } %>
         </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-4 font-jack-frost">
+          <button class="btn btn-outline-dark border">&laquo; Previous</button>
+          <div>
+            <% for (let i = 1; i <= 10; i++) { %>
+              <button class="btn btn-sm <%= i === currentPage ? 'btn-dark' : 'btn-outline-dark border' %>"><%= i %></button>
+            <% } %>
+          </div>
+          <button class="btn btn-outline-dark border">Next &raquo;</button>
+        </div>
+      </section>
     </div>
+  </div>
 
-    <!-- Footer -->
-    <%- include('../partials/footer') %>
+  <%- include('../partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.querySelectorAll('.size-badge').forEach(badge => {
+      badge.addEventListener('click', function() {
+        document.querySelectorAll('.size-badge').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('selectedSize').value = this.dataset.size;
+      });
+    });
+  </script>
+  <script>
+  const priceRange = document.getElementById('priceRange');
+  const priceValue = document.getElementById('priceValue');
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Search functionality
-        document.getElementById('searchForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const searchQuery = document.getElementById('searchInput').value;
-            const url = new URL(window.location.href);
-            if (searchQuery) {
-                url.searchParams.set('search', searchQuery);
-            } else {
-                url.searchParams.delete('search');
-            }
-            window.location.href = url.toString();
-        });
-    </script>
+  priceRange.addEventListener('input', () => {
+    priceValue.textContent = priceRange.value;
+  });
+</script>
 </body>
-</html> 
+</html>
