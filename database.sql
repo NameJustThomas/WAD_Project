@@ -163,3 +163,8 @@ CREATE TABLE coupons (
     usage_limit INT DEFAULT NULL,
     times_used INT DEFAULT 0
 );
+
+INSERT INTO coupons (code, discount_type, discount_value, expires_at, usage_limit)
+VALUES
+('SALE10', 'percent', 10.00, '2025-12-31 23:59:59', 100),
+('FLAT50', 'fixed', 50.00, '2025-06-30 23:59:59', 50);
