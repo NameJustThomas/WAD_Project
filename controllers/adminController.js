@@ -91,7 +91,7 @@ exports.index = async (req, res) => {
             totalUsers,
             recentOrders: formattedRecentOrders,
             topProducts: formattedTopProducts,
-            totalRevenue: safeOrderStats.totalRevenue.toFixed(2),
+            totalRevenue: Number(safeOrderStats.totalRevenue || 0).toFixed(2),
             pendingOrders: safeOrderStats.pendingOrders,
             completedOrders: safeOrderStats.completedOrders,
             monthlySales: formattedMonthlySales
@@ -586,15 +586,15 @@ exports.analytics = async (req, res) => {
         // Format data for display
         const formattedData = {
             totalOrders: totalSales.total_orders || 0,
-            totalRevenue: (Number(totalSales.total_revenue) || 0).toFixed(2),
-            averageOrderValue: (Number(totalSales.average_order_value) || 0).toFixed(2),
+            totalRevenue: (totalSales.total_revenue || 0).toFixed(2),
+            averageOrderValue: (totalSales.average_order_value || 0).toFixed(2),
             monthlySales: formattedMonthlySales,
             topProducts: formattedTopProducts,
             recentOrders: recentOrders.map(order => ({
                 id: order.id,
                 customer: order.customer_name || 'Guest',
                 date: new Date(order.created_at).toLocaleDateString(),
-                amount: (Number(order.total_amount) || 0).toFixed(2),  // <--- Fix here
+                amount: (order.total_amount || 0).toFixed(2),
                 status: order.status,
                 items: order.item_count || 0,
                 products: order.product_names || 'No products'
@@ -608,13 +608,11 @@ exports.analytics = async (req, res) => {
     } catch (error) {
         console.error('Error in analytics:', error);
         res.status(500).render('error', {
-            title: 'Error',  // <--- Add this line
             message: 'Error loading analytics data',
             error: error
         });
     }
 };
-
 
 // Get analytics data for date range
 exports.getAnalyticsData = async (req, res) => {
