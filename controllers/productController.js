@@ -28,9 +28,9 @@ const formatPrice = (price) => {
 // Get all products
 exports.index = async (req, res) => {
     try {
-        const { category, sort, search } = req.query;
+        const { category, sort, search, gender } = req.query;
         const page = parseInt(req.query.page) || 1;
-        const limit = 12;
+        const limit = gender ? 100 : 12; // Show more products when filtering by gender
         const offset = (page - 1) * limit;
 
         // Get products with filters
@@ -38,12 +38,13 @@ exports.index = async (req, res) => {
             category,
             sort,
             search,
+            gender,
             limit,
             offset
         });
 
         // Get total count for pagination
-        const allProducts = await Product.findAll({ category, search });
+        const allProducts = await Product.findAll({ category, search, gender });
         const total = allProducts.length;
         const totalPages = Math.ceil(total / limit);
 
@@ -55,6 +56,7 @@ exports.index = async (req, res) => {
             products,
             categories,
             currentCategory: category,
+            currentGender: gender,
             currentSort: sort || 'newest',
             sort,
             search,

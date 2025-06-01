@@ -48,7 +48,7 @@ class Category {
     static async create(categoryData) {
         try {
             const [result] = await pool.query(
-                'INSERT INTO categories (name, description, image) VALUES (?, ?, ?)',
+                'INSERT INTO categories (name, description, image_url) VALUES (?, ?, ?)',
                 [categoryData.name, categoryData.description, categoryData.image]
             );
             return result.insertId;

@@ -2,21 +2,23 @@ const db = require('../config/database'); // Your database connection (mysql2/pr
 
 const getUserById = async (id) => {
   const [rows] = await db.execute(
-    `SELECT id, username, email, firstName, lastName, address, city, state, zipCode, created_at 
-     FROM users WHERE id = ? LIMIT 1`,
+    `SELECT p.*, u.username, u.email 
+     FROM profiles p
+     JOIN users u ON p.user_id = u.id
+     WHERE p.user_id = ? LIMIT 1`,
     [id]
   );
   return rows[0];
 };
 
 const updateUserProfile = async (id, profileData) => {
-  const { firstName, lastName, email, address, city, state, zipCode } = profileData;
+  const { first_name, last_name, address, city, state, zip_code } = profileData;
 
   const [result] = await db.execute(
-    `UPDATE users
-     SET firstName = ?, lastName = ?, email = ?, address = ?, city = ?, state = ?, zipCode = ?
-     WHERE id = ?`,
-    [firstName, lastName, email, address, city, state, zipCode, id]
+    `UPDATE profiles
+     SET first_name = ?, last_name = ?, address = ?, city = ?, state = ?, zip_code = ?
+     WHERE user_id = ?`,
+    [first_name, last_name, address, city, state, zip_code, id]
   );
 
   return result.affectedRows === 1;

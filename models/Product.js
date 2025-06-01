@@ -16,7 +16,7 @@ const { formatPrice } = require('../helpers/format');
 class Product {
     static async findAll(options = {}) {
         try {
-            const { category_id, search, sort = 'name_asc', page = 1, limit = 12 } = options;
+            const { category_id, search, sort = 'name_asc', page = 1, limit = 12, gender } = options;
             const offset = (page - 1) * limit;
             const params = [];
 
@@ -30,6 +30,11 @@ class Product {
             if (category_id) {
                 query += ' AND p.category_id = ?';
                 params.push(category_id);
+            }
+
+            if (gender) {
+                query += ' AND p.gender = ?';
+                params.push(gender);
             }
 
             if (search) {

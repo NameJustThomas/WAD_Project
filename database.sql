@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock INT NOT NULL DEFAULT 0,
     category_id INT,
     image_url VARCHAR(255),
+    gender ENUM('men', 'women', 'kids', 'unisex') DEFAULT 'unisex',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS orders (
     total_amount DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
     shipping_address TEXT NOT NULL,
+    payment_method VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -145,12 +147,20 @@ CREATE TABLE IF NOT EXISTS coupons (
     times_used INT DEFAULT 0
 );
 
--- Insert users
-INSERT INTO users (username, email, password, role)
-VALUES
-('alice', 'alice@example.com', 'hashed_password1', 'user'),
-('bob', 'bob@example.com', 'hashed_password2', 'user'),
-('admin', 'admin@example.com', 'hashed_password_admin', 'admin');
+CREATE TABLE IF NOT EXISTS profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip_code VARCHAR(20),
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
 -- Insert clothing-only categories
 INSERT INTO categories (name, description, image_url) VALUES
@@ -164,53 +174,55 @@ INSERT INTO categories (name, description, image_url) VALUES
 ('Vintage', 'Retro and vintage clothing', '/images/categories/vintage.jpg');
 
 -- Insert sample products (clothing)
-INSERT INTO products (name, description, price, discount_price, stock, category_id, image_url) VALUES
-('Basic White Tee', 'Classic casual cotton t-shirt', 19.99, 14.99, 100, 1, '/images/products/white_tee.jpg'),
-('Black Blazer', 'Formal fitted black blazer for events', 89.99, NULL, 50, 2, '/images/products/black_blazer.jpg'),
-('Red Party Dress', 'Stylish red dress for parties', 129.99, 99.99, 30, 3, '/images/products/party_dress.jpg'),
-('Workout Leggings', 'High-waisted gym leggings', 39.99, 29.99, 70, 4, '/images/products/leggings.jpg'),
-('Summer Shorts', 'Lightweight summer shorts', 24.99, 19.99, 80, 5, '/images/products/summer_shorts.jpg'),
-('Wool Sweater', 'Thick wool sweater for winter', 59.99, 49.99, 60, 6, '/images/products/wool_sweater.jpg'),
-('Hoodie Jacket', 'Oversized street-style hoodie', 44.99, 34.99, 90, 7, '/images/products/street_hoodie.jpg'),
-('Vintage Denim Jacket', 'Retro faded blue denim jacket', 74.99, NULL, 40, 8, '/images/products/denim_jacket.jpg');
+INSERT INTO products (name, description, price, discount_price, stock, category_id, image_url, gender) VALUES
+-- Men's Collection
+('Basic White Tee', 'Classic casual cotton t-shirt', 19.99, 14.99, 100, 1, '/images/products/white_tee.jpg', 'men'),
+('Hoodie Jacket', 'Oversized street-style hoodie', 44.99, 34.99, 90, 7, '/images/products/street_hoodie.jpg', 'men'),
+('Formal Black Suit', 'Classic black suit for formal occasions', 199.99, 179.99, 30, 2, '/images/products/black_suit.jpg', 'men'),
+('Denim Jeans', 'Classic blue denim jeans', 49.99, 39.99, 75, 1, '/images/products/denim_jeans.jpg', 'men'),
+('Leather Jacket', 'Premium leather biker jacket', 149.99, NULL, 25, 7, '/images/products/leather_jacket.jpg', 'men'),
+('Polo Shirt', 'Classic fit polo shirt', 29.99, 24.99, 60, 1, '/images/products/polo_shirt.jpg', 'men'),
+('Winter Parka', 'Heavy-duty winter parka', 129.99, 99.99, 40, 6, '/images/products/winter_parka.jpg', 'men'),
+('Casual Sneakers', 'Comfortable everyday sneakers', 79.99, 59.99, 50, 1, '/images/products/casual_sneakers.jpg', 'men'),
 
--- Insert sample orders
-INSERT INTO orders (user_id, total_amount, status, shipping_address)
-VALUES
-(1, 174.97, 'shipped', '123 Maple St, Hanoi, Vietnam'),
-(2, 99.99, 'processing', '456 Oak Rd, Ho Chi Minh City, Vietnam');
+-- Women's Collection
+('Red Party Dress', 'Stylish red dress for parties', 129.99, 99.99, 30, 3, '/images/products/party_dress.jpg', 'women'),
+('Workout Leggings', 'High-waisted gym leggings', 39.99, 29.99, 70, 4, '/images/products/leggings.jpg', 'women'),
+('Summer Maxi Dress', 'Floral print maxi dress', 89.99, 69.99, 45, 5, '/images/products/maxi_dress.jpg', 'women'),
+('Blouse', 'Elegant silk blouse', 59.99, 49.99, 55, 2, '/images/products/blouse.jpg', 'women'),
+('Pencil Skirt', 'Classic black pencil skirt', 49.99, 39.99, 40, 2, '/images/products/pencil_skirt.jpg', 'women'),
+('Winter Coat', 'Warm wool winter coat', 159.99, 129.99, 35, 6, '/images/products/winter_coat.jpg', 'women'),
+('Ankle Boots', 'Stylish leather ankle boots', 99.99, 79.99, 30, 7, '/images/products/ankle_boots.jpg', 'women'),
+('Handbag', 'Designer leather handbag', 129.99, 99.99, 25, 1, '/images/products/handbag.jpg', 'women'),
 
--- Insert sample order items
-INSERT INTO order_items (order_id, product_id, quantity, price)
-VALUES
-(1, 1, 2, 19.99),
-(1, 2, 1, 89.99),
-(2, 4, 1, 39.99),
-(2, 3, 1, 59.99);
+-- Kids' Collection
+('Kids T-Shirt', 'Colorful cotton t-shirt', 14.99, 12.99, 100, 1, '/images/products/kids_tshirt.jpg', 'kids'),
+('Kids Jeans', 'Comfortable stretch jeans', 24.99, 19.99, 80, 1, '/images/products/kids_jeans.jpg', 'kids'),
+('Kids Hoodie', 'Warm and cozy hoodie', 29.99, 24.99, 70, 7, '/images/products/kids_hoodie.jpg', 'kids'),
+('Kids Dress', 'Cute floral dress', 34.99, 29.99, 60, 3, '/images/products/kids_dress.jpg', 'kids'),
+('Kids Sneakers', 'Comfortable kids sneakers', 39.99, 34.99, 50, 1, '/images/products/kids_sneakers.jpg', 'kids'),
+('Kids Winter Jacket', 'Warm winter jacket', 49.99, 39.99, 40, 6, '/images/products/kids_jacket.jpg', 'kids'),
+('Kids Pajamas', 'Soft cotton pajamas', 19.99, 16.99, 90, 1, '/images/products/kids_pajamas.jpg', 'kids'),
+('Kids Backpack', 'Colorful school backpack', 24.99, 19.99, 75, 1, '/images/products/kids_backpack.jpg', 'kids'),
 
--- Insert sample cart
-INSERT INTO cart (user_id, product_id, quantity)
-VALUES
-(1, 6, 1),
-(2, 5, 2);
-
--- Insert reviews
-INSERT INTO reviews (product_id, user_id, rating, comment)
-VALUES
-(1, 1, 5, 'Very comfy shirt, perfect for daily wear!'),
-(2, 2, 4, 'Fits well, looks sharp for office.'),
-(3, 1, 5, 'Gorgeous dress! Got lots of compliments.'),
-(5, 2, 4, 'Good value for summer, light and cool.'),
-(8, 1, 5, 'Stylish and great quality denim.');
+-- Unisex Collection
+('Black Blazer', 'Formal fitted black blazer for events', 89.99, NULL, 50, 2, '/images/products/black_blazer.jpg', 'unisex'),
+('Summer Shorts', 'Lightweight summer shorts', 24.99, 19.99, 80, 5, '/images/products/summer_shorts.jpg', 'unisex'),
+('Wool Sweater', 'Thick wool sweater for winter', 59.99, 49.99, 60, 6, '/images/products/wool_sweater.jpg', 'unisex'),
+('Vintage Denim Jacket', 'Retro faded blue denim jacket', 74.99, NULL, 40, 8, '/images/products/denim_jacket.jpg', 'unisex'),
+('Beanie Hat', 'Warm winter beanie', 19.99, 14.99, 100, 6, '/images/products/beanie.jpg', 'unisex'),
+('Canvas Tote Bag', 'Eco-friendly canvas tote', 29.99, 24.99, 70, 1, '/images/products/tote_bag.jpg', 'unisex'),
+('Scarf', 'Wool blend scarf', 24.99, 19.99, 85, 6, '/images/products/scarf.jpg', 'unisex'),
+('Sunglasses', 'Classic aviator sunglasses', 39.99, 29.99, 65, 1, '/images/products/sunglasses.jpg', 'unisex');
 
 -- Insert FAQs
 INSERT INTO faqs (product_id, question, answer)
 VALUES
-(1, 'Is this tee shrink-proof?', 'Yes, it’s pre-shrunk cotton.'),
-(2, 'Can it be dry cleaned?', 'Yes, dry cleaning is safe.'),
-(4, 'Does it have a phone pocket?', 'No, just standard leggings.'),
-(6, 'Is this sweater itchy?', 'No, it’s soft wool blend.'),
-(8, 'Is it unisex?', 'Yes, the design suits all genders.');
+(1, "Is this tee shrink-proof?", "Yes, it's pre-shrunk cotton."),
+(2, "Can it be dry cleaned?", "Yes, dry cleaning is safe."),
+(4, "Does it have a phone pocket?", "No, just standard leggings."),
+(6, "Is this sweater itchy?", "No, it's soft wool blend."),
+(8, "Is it unisex?", "Yes, the design suits all genders.");
 
 -- Insert coupons
 INSERT INTO coupons (code, discount_type, discount_value, expires_at, usage_limit)
@@ -230,18 +242,3 @@ INSERT INTO feedbacks (name, rating, content) VALUES
 ('Hanh Bui', 2, 'Product arrived damaged. Awaiting support response.'),
 ('Trung Tuan', 5, 'Top-notch service and product. Will refer friends.'),
 ('Kim Chi', 4, 'Good deal for the price. Smooth transaction.');
-
-CREATE TABLE IF NOT EXISTS profiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
-    address VARCHAR(255),
-    city VARCHAR(100),
-    state VARCHAR(50),
-    zip_code VARCHAR(20),
-    phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
