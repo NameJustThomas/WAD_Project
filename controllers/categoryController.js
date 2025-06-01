@@ -71,10 +71,10 @@ exports.create = async (req, res, next) => {
     try {
         const categoryData = {
             name: req.body.name,
-            description: req.body.description
+            description: req.body.description,
+            image: req.body.image // Support image field
         };
 
-        // Validate input
         const errors = await Category.validate(categoryData);
         if (errors) {
             return res.render('shop/categories', {
@@ -96,10 +96,10 @@ exports.update = async (req, res, next) => {
     try {
         const categoryData = {
             name: req.body.name,
-            description: req.body.description
+            description: req.body.description,
+            image: req.body.image // Support image field
         };
 
-        // Validate input
         const errors = await Category.validateUpdate(categoryData);
         if (errors) {
             const category = await Category.findById(req.params.id);
@@ -143,4 +143,4 @@ exports.delete = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}; 
+};

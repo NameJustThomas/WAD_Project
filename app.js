@@ -39,7 +39,7 @@ app.use(session({
 
 app.use(flash());
 
-// Middleware để truyền flash message vào res.locals cho view
+// Flash messages to res.locals
 app.use((req, res, next) => {
     res.locals.messages = req.flash();
     next();
@@ -49,7 +49,7 @@ app.use((req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Add path variable to all routes
+// Add path to all routes
 app.use((req, res, next) => {
     res.locals.path = req.path;
     next();
@@ -74,6 +74,7 @@ const categoriesRouter = require('./routes/categories');
 const cartRouter = require('./routes/cart');
 const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
+const couponRouter = require('./routes/coupons'); // ✅ Added
 
 // Use routes
 app.use('/', homeRouter);
@@ -82,6 +83,7 @@ app.use('/categories', categoriesRouter);
 app.use('/cart', cartRouter);
 app.use('/admin', adminRouter);
 app.use('/', authRouter);
+app.use('/', couponRouter); // ✅ Registered coupon routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -105,4 +107,4 @@ app.use((req, res) => {
 // Start server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-}); 
+});

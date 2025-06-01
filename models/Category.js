@@ -48,8 +48,8 @@ class Category {
     static async create(categoryData) {
         try {
             const [result] = await pool.query(
-                'INSERT INTO categories (name, description) VALUES (?, ?)',
-                [categoryData.name, categoryData.description]
+                'INSERT INTO categories (name, description, image) VALUES (?, ?, ?)',
+                [categoryData.name, categoryData.description, categoryData.image]
             );
             return result.insertId;
         } catch (error) {
@@ -61,8 +61,8 @@ class Category {
     static async update(id, categoryData) {
         try {
             const [result] = await pool.query(
-                'UPDATE categories SET name = ?, description = ? WHERE id = ?',
-                [categoryData.name, categoryData.description, id]
+                'UPDATE categories SET name = ?, description = ?, image = ? WHERE id = ?',
+                [categoryData.name, categoryData.description, categoryData.image, id]
             );
             return result.affectedRows > 0;
         } catch (error) {
@@ -112,6 +112,10 @@ class Category {
             errors.description = 'Category description is required';
         }
 
+        if (!categoryData.image) {
+            errors.image = 'Category image is required';
+        }
+
         return Object.keys(errors).length > 0 ? errors : null;
     }
 
@@ -125,9 +129,13 @@ class Category {
         if (data.description && data.description.length > 500) {
             errors.description = 'Description must not exceed 500 characters';
         }
-        
+
+        if (data.image && data.image.length > 255) {
+            errors.image = 'Image URL must not exceed 255 characters';
+        }
+
         return Object.keys(errors).length === 0 ? null : errors;
     }
 }
 
-module.exports = Category; 
+module.exports = Category;

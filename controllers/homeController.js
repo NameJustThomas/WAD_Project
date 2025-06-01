@@ -30,7 +30,15 @@ exports.getHome = async (req, res) => {
         // Get all categories
         const [categories] = await pool.query('SELECT * FROM categories');
 
-        // Convert price and discount_price to number for each product
+        // 🔸 Get feedbacks (limit for homepage display)
+        const [feedbacks] = await pool.query(`
+            SELECT name, rating, content
+            FROM feedbacks
+            ORDER BY created_at DESC
+            LIMIT 6
+        `);
+
+        // Convert prices to numbers
         const formattedProducts = products.map(product => ({
             ...product,
             price: parseFloat(product.price),
@@ -38,11 +46,14 @@ exports.getHome = async (req, res) => {
             final_price: parseFloat(product.final_price)
         }));
 
+        // Render home.ejs
         res.render('home', {
             title: 'Home',
             products: formattedProducts,
-            categories
+            categories,
+            feedbacks // 🔸 pass feedbacks here!
         });
+
     } catch (error) {
         console.error('Error fetching home page data:', error);
         res.status(500).render('error', {
@@ -50,4 +61,4 @@ exports.getHome = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error : {}
         });
     }
-}; 
+};
