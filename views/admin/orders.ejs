@@ -136,14 +136,19 @@
           });
 
           if (response.ok) {
-            alert('Order status updated successfully');
-            this.dataset.originalValue = newStatus;
+            const result = await response.json();
+            if (result.success) {
+              alert('Order status updated successfully');
+              this.dataset.originalValue = newStatus;
+            } else {
+              throw new Error(result.message || 'Failed to update order status');
+            }
           } else {
             throw new Error('Failed to update order status');
           }
         } catch (error) {
           console.error('Error:', error);
-          alert('Error updating order status');
+          alert('Error updating order status: ' + error.message);
           this.value = this.dataset.originalValue;
         }
       });

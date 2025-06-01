@@ -122,15 +122,51 @@ exports.getOrderDetails = async (req, res) => {
         const orderItems = await OrderItem.findByOrderId(orderId);
 
         // Format data
+        let shippingAddress = {};
+        try {
+            if (typeof order.shipping_address === 'string') {
+                // Try to parse as JSON first
+                try {
+                    shippingAddress = JSON.parse(order.shipping_address);
+                } catch (parseError) {
+                    // If not JSON, treat as plain text
+                    shippingAddress = {
+                        fullName: '',
+                        address: order.shipping_address,
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                        phone: '',
+                        email: ''
+                    };
+                }
+            } else if (order.shipping_address) {
+                shippingAddress = order.shipping_address;
+            }
+        } catch (error) {
+            console.error('Error handling shipping address:', error);
+            shippingAddress = {
+                fullName: '',
+                address: 'Address not available',
+                city: '',
+                state: '',
+                zipCode: '',
+                phone: '',
+                email: ''
+            };
+        }
+
         const formattedOrder = {
             ...order,
             formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
             formatted_date: new Date(order.created_at).toLocaleDateString(),
-            shipping_address: JSON.parse(order.shipping_address || '{}')
+            shipping_address: shippingAddress
         };
 
         const formattedItems = orderItems.map(item => ({
             ...item,
+            product_name: item.product_name || 'Unknown Product',
+            image: item.image || '/images/products/no-image.jpg',
             formatted_price: parseFloat(item.price || 0).toFixed(2),
             formatted_total: (parseFloat(item.price || 0) * item.quantity).toFixed(2)
         }));

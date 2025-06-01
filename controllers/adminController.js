@@ -445,13 +445,19 @@ exports.deleteCategory = async (req, res) => {
 // Order management
 exports.getOrders = async (req, res) => {
     try {
-        const orders = await Order.findAll();
-        // Format order data
+        const [orders] = await pool.query(`
+            SELECT o.*, CONCAT(p.first_name, ' ', p.last_name) as user_name 
+            FROM orders o 
+            LEFT JOIN profiles p ON o.user_id = p.user_id 
+            ORDER BY o.created_at DESC
+        `);
+
+        // Format orders data
         const formattedOrders = orders.map(order => ({
             ...order,
+            user_name: order.user_name || 'Guest',
             formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
-            formatted_date: new Date(order.created_at).toLocaleDateString(),
-            user_name: order.user_name || 'Guest'
+            formatted_date: new Date(order.created_at).toLocaleDateString()
         }));
 
         res.render('admin/orders', {
@@ -651,7 +657,7 @@ exports.analytics = async (req, res) => {
                 id: order.id,
                 customer: order.customer_name || 'Guest',
                 date: new Date(order.created_at).toLocaleDateString(),
-                amount: parseFloat(order.total_amount || 0).toFixed(2),
+                amount: parseFloat(order.total_amount || 0),
                 status: order.status,
                 items: order.item_count || 0,
                 products: order.product_names || 'No products'
@@ -934,6 +940,202 @@ exports.getProductImages = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error getting product images'
+        });
+    }
+};
+
+// Update order status
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status'
+            });
+        }
+
+        // Update order status
+        const [result] = await pool.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            [status, orderId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Order status updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating order status'
+        });
+    }
+};
+
+// Get order details
+exports.getOrderDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const orderId = parseInt(id);
+
+        // Validate order ID
+        if (isNaN(orderId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid order ID'
+            });
+        }
+
+        // Get order details with user and items information
+        const [order] = await pool.query(`
+            SELECT 
+                o.*,
+                CONCAT(p.first_name, ' ', p.last_name) as user_name,
+                p.email as user_email,
+                p.phone as user_phone,
+                a.address_line1,
+                a.address_line2,
+                a.city,
+                a.state,
+                a.postal_code,
+                a.country
+            FROM orders o
+            LEFT JOIN profiles p ON o.user_id = p.user_id
+            LEFT JOIN addresses a ON o.shipping_address_id = a.id
+            WHERE o.id = ?
+        `, [orderId]);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Get order items
+        const [items] = await pool.query(`
+            SELECT 
+                oi.*,
+                p.name as product_name,
+                p.image_url as product_image
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        `, [orderId]);
+
+        // Format order data
+        const formattedOrder = {
+            ...order,
+            formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
+            formatted_date: new Date(order.created_at).toLocaleDateString(),
+            items: items.map(item => ({
+                ...item,
+                formatted_price: parseFloat(item.price || 0).toFixed(2),
+                formatted_subtotal: parseFloat(item.subtotal || 0).toFixed(2)
+            }))
+        };
+
+        res.json({
+            success: true,
+            order: formattedOrder
+        });
+    } catch (error) {
+        console.error('Error in getOrderDetails:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading order details'
+        });
+    }
+};
+
+// Get user details
+exports.getUserDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = parseInt(id);
+
+        // Validate user ID
+        if (isNaN(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+
+        // Get user details with profile information
+        const [user] = await pool.query(`
+            SELECT 
+                u.*,
+                p.first_name,
+                p.last_name,
+                p.phone,
+                p.date_of_birth,
+                p.gender,
+                a.address_line1,
+                a.address_line2,
+                a.city,
+                a.state,
+                a.postal_code,
+                a.country
+            FROM users u
+            LEFT JOIN profiles p ON u.id = p.user_id
+            LEFT JOIN addresses a ON u.id = a.user_id
+            WHERE u.id = ?
+        `, [userId]);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Get user's orders
+        const [orders] = await pool.query(`
+            SELECT 
+                id,
+                total_amount,
+                status,
+                created_at
+            FROM orders
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        `, [userId]);
+
+        // Format user data
+        const formattedUser = {
+            ...user,
+            full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'N/A',
+            formatted_date: user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A',
+            orders: orders.map(order => ({
+                ...order,
+                formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
+                formatted_date: new Date(order.created_at).toLocaleDateString()
+            }))
+        };
+
+        res.json({
+            success: true,
+            user: formattedUser
+        });
+    } catch (error) {
+        console.error('Error in getUserDetails:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading user details'
         });
     }
 };

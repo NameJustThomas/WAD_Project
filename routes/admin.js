@@ -44,10 +44,12 @@ router.delete('/categories/:id', adminController.deleteCategory);
 
 // Order management
 router.get('/orders', adminController.getOrders);
-router.put('/orders/:id', adminController.updateOrder);
+router.get('/orders/:id', adminController.getOrderDetails);
+router.put('/orders/:orderId/status', adminController.updateOrderStatus);
 
 // User management
 router.get('/users', adminController.getUsers);
+router.get('/users/:id', adminController.getUserDetails);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 

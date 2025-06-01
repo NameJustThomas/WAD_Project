@@ -19,10 +19,19 @@
       <!-- Centered Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4 text-uppercase fw-semibold">
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle text-dark" href="#" id="shopDropdown" role="button" data-bs-toggle="dropdown">Shop</a>
-          <ul class="dropdown-menu">
+          <a class="nav-link dropdown-toggle text-dark" href="#" id="shopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Shop
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="shopDropdown">
             <li><a class="dropdown-item" href="/products">All Products</a></li>
-            <li><a class="dropdown-item" href="/categories">All Categories</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/products?gender=men">Men</a></li>
+            <li><a class="dropdown-item" href="/products?gender=women">Women</a></li>
+            <li><a class="dropdown-item" href="/products?gender=unisex">Unisex</a></li>
+            <li><a class="dropdown-item" href="/products?gender=kids">Kids</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/products?filter=sale">On Sale</a></li>
+            <li><a class="dropdown-item" href="/products?sort=newest">New Arrivals</a></li>
           </ul>
         </li>
         <li class="nav-item">
