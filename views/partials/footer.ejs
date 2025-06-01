@@ -21,16 +21,27 @@
 
           <!-- Right side: Email input + Button -->
           <div class="col-lg-6 col-12">
-            <form class="d-flex" action="/subscribe" method="POST">
-              <input
-                type="email"
-                id="newsletter-email"
-                name="email"
-                class="form-control border-0 rounded-end-pill"
-                placeholder="Enter your email address"
-                required
-              />
-              <button type="submit" class="btn btn-dark rounded-start-pill">Subscribe</button>
+            <form
+              class="d-flex flex-column align-items-end justify-content-center justify-content-lg-end gap-2"
+            >
+              <div class="input-group">
+                <span
+                  class="input-group-text bg-white border-0 rounded-start-pill"
+                >
+                  <i class="fa-solid fa-envelope"></i>
+                </span>
+                <input
+                  type="email"
+                  class="form-control border-0 rounded-end-pill"
+                  placeholder="Enter your email address"
+                />
+              </div>
+              <button
+                type="submit"
+                class="btn btn-light px-4 rounded-pill fw-semibold"
+              >
+                Subscribe to Newsletter
+              </button>
             </form>
           </div>
         </div>
