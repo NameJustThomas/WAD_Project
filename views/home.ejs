@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home - Online Shop</title>
-
-    <!-- Stylesheets -->
+    <title><%= title %> - Online Shop</title>
+    <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="stylesheet" href="/css/navbar.css" />
   </head>
 
   <body>
@@ -74,7 +74,7 @@
 
       <div class="new-arrivals-striped-background">
         <div class="container py-4">
-          <div class="row new-arrivals-row flex-nowrap overflow-auto">
+          <div class="new-arrivals-row">
             <% const newArrivals = products.slice(0, 8); %>
             <% if (newArrivals.length > 0) { %>
               <% newArrivals.forEach(product => {
@@ -90,9 +90,10 @@
                   <a href="/products/<%= product.id %>" class="card new-arrival-card text-decoration-none text-dark" style="cursor: pointer;">
                     <div class="new-arrival-image-container">
                       <img
-                        src="<%= product.image %>"
+                        src="<%= product.image_url || '/images/products/no-image.jpg' %>"
                         class="new-arrival-img"
                         alt="<%= product.name %>"
+                        onerror="this.src='/images/products/no-image.jpg'"
                       />
                     </div>
                     <div class="card-body new-arrival-card-body d-flex flex-column">

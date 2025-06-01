@@ -60,6 +60,7 @@
                       <th>Price</th>
                       <th>Discount Price</th>
                       <th>Stock</th>
+                      <th>Gender</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -80,17 +81,18 @@
                       <td><%= product.formatted_price %></td>
                       <td><%= product.formatted_discount_price || '-' %></td>
                       <td><%= product.stock %></td>
+                      <td><%= product.gender ? product.gender.charAt(0).toUpperCase() + product.gender.slice(1) : '-' %></td>
                       <td>
                         <div class="btn-group">
                           <button
                             class="btn btn-sm btn-info"
-                            onclick="editProduct(<%= product.id %>)"
+                            onclick="editProduct('<%= product.id %>')"
                           >
                             Edit
                           </button>
                           <button
                             class="btn btn-sm btn-danger"
-                            onclick="deleteProduct(<%= product.id %>)"
+                            onclick="deleteProduct('<%= product.id %>')"
                           >
                             Delete
                           </button>
@@ -193,6 +195,16 @@
                     required
                   />
                 </div>
+              </div>
+              <div class="mb-3">
+                <label for="gender" class="form-label">Gender</label>
+                <select class="form-select" id="gender" name="gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="men">Men</option>
+                  <option value="women">Women</option>
+                  <option value="kids">Kids</option>
+                  <option value="unisex">Unisex</option>
+                </select>
               </div>
             </div>
             <div class="modal-footer">
@@ -298,9 +310,7 @@
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label for="edit_category_id" class="form-label"
-                    >Category</label
-                  >
+                  <label for="edit_category_id" class="form-label">Category</label>
                   <select
                     class="form-select"
                     id="edit_category_id"
@@ -325,6 +335,16 @@
                     required
                   />
                 </div>
+              </div>
+              <div class="mb-3">
+                <label for="edit_gender" class="form-label">Gender</label>
+                <select class="form-select" id="edit_gender" name="gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="men">Men</option>
+                  <option value="women">Women</option>
+                  <option value="kids">Kids</option>
+                  <option value="unisex">Unisex</option>
+                </select>
               </div>
             </div>
             <div class="modal-footer">
@@ -354,84 +374,176 @@
       // Open the edit modal and populate the fields
       async function editProduct(productId) {
         try {
-          const response = await fetch(`/admin/products/${productId}`);
-          const product = await response.json();
-
-          if (!product || !product.id) {
-            alert("Product not found!");
-            return;
+          if (!productId) {
+            throw new Error('Invalid product ID');
           }
 
+          const response = await fetch(`/admin/products/${productId}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(result.message || 'Failed to load product');
+          }
+
+          const product = result.product;
+          if (!product || !product.id) {
+            throw new Error('Invalid product data received');
+          }
+
+          // Populate form fields
           document.getElementById("edit_id").value = product.id;
-          document.getElementById("edit_name").value = product.name;
-          document.getElementById("edit_description").value =
-            product.description || "";
-          document.getElementById("edit_price").value = product.price;
-          document.getElementById("edit_discount_price").value =
-            product.discount_price || "";
-          document.getElementById("edit_category_id").value =
-            product.category_id;
-          document.getElementById("edit_stock").value = product.stock;
+          document.getElementById("edit_name").value = product.name || '';
+          document.getElementById("edit_description").value = product.description || '';
+          document.getElementById("edit_price").value = product.price || '';
+          document.getElementById("edit_discount_price").value = product.discount_price || '';
+          document.getElementById("edit_category_id").value = product.category_id || '';
+          document.getElementById("edit_stock").value = product.stock || '';
+          
+          // Set gender value
+          const genderSelect = document.getElementById("edit_gender");
+          if (product.gender) {
+            genderSelect.value = product.gender.toLowerCase();
+          } else {
+            genderSelect.value = "kids"; // Default value
+          }
 
-          document.getElementById("current_image").src =
-            product.image_url || "/images/products/no-image.jpg";
+          // Update image preview
+          const currentImage = document.getElementById("current_image");
+          if (product.image_url) {
+            currentImage.src = product.image_url;
+            currentImage.alt = product.name;
+          } else {
+            currentImage.src = "/images/products/no-image.jpg";
+            currentImage.alt = "No image available";
+          }
 
-          const modal = new bootstrap.Modal(
-            document.getElementById("editProductModal")
-          );
+          // Show modal
+          const modal = new bootstrap.Modal(document.getElementById("editProductModal"));
           modal.show();
         } catch (error) {
-          console.error(error);
-          alert("Failed to fetch product details.");
+          console.error('Error in editProduct:', error);
+          alert(error.message || "Failed to fetch product details.");
+        }
+      }
+
+      // Submit new product data
+      async function saveProduct() {
+        try {
+          const form = document.getElementById("addProductForm");
+          if (!form) {
+            throw new Error('Form not found');
+          }
+
+          const formData = new FormData(form);
+          
+          // Validate required fields
+          const requiredFields = ['name', 'price', 'category_id', 'stock', 'gender'];
+          for (const field of requiredFields) {
+            if (!formData.get(field)) {
+              throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+            }
+          }
+
+          const response = await fetch("/admin/products", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to add product");
+          }
+
+          // Show success message
+          alert('Product added successfully');
+          location.reload();
+        } catch (error) {
+          console.error('Error in saveProduct:', error);
+          alert(error.message || "An error occurred while adding the product");
         }
       }
 
       // Submit updated product data
       async function updateProduct() {
-        const form = document.getElementById("editProductForm");
-        const formData = new FormData(form);
-
         try {
-          const response = await fetch(
-            `/admin/products/${formData.get("id")}`,
-            {
-              method: "PUT",
-              body: formData,
-            }
-          );
-
-          if (response.ok) {
-            location.reload();
-          } else {
-            const result = await response.json();
-            alert(result.message || "Update failed.");
+          const form = document.getElementById("editProductForm");
+          if (!form) {
+            throw new Error('Form not found');
           }
+
+          const formData = new FormData(form);
+          const productId = formData.get("id");
+
+          if (!productId) {
+            throw new Error('Product ID is required');
+          }
+
+          // Validate required fields
+          const requiredFields = ['name', 'price', 'category_id', 'stock', 'gender'];
+          for (const field of requiredFields) {
+            if (!formData.get(field)) {
+              throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+            }
+          }
+
+          const response = await fetch(`/admin/products/${productId}`, {
+            method: "PUT",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to update product");
+          }
+
+          // Show success message
+          alert('Product updated successfully');
+          location.reload();
         } catch (error) {
-          console.error(error);
-          alert("An error occurred during update.");
+          console.error('Error in updateProduct:', error);
+          alert(error.message || "An error occurred during update");
         }
       }
 
       // Delete a product
       async function deleteProduct(productId) {
-        if (!confirm("Are you sure you want to delete this product?")) return;
-
         try {
+          if (!productId) {
+            throw new Error('Product ID is required');
+          }
+
+          if (!confirm("Are you sure you want to delete this product?")) {
+            return;
+          }
+
           const response = await fetch(`/admin/products/${productId}`, {
             method: "DELETE",
           });
 
-          if (response.ok) {
-            document
-              .querySelector(`tr[data-product-id="${productId}"]`)
-              .remove();
-          } else {
-            const result = await response.json();
-            alert(result.message || "Delete failed.");
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to delete product");
           }
+
+          // Remove the row from the table
+          const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+          if (row) {
+            row.remove();
+          }
+
+          // Show success message
+          alert('Product deleted successfully');
         } catch (error) {
-          console.error(error);
-          alert("An error occurred during deletion.");
+          console.error('Error in deleteProduct:', error);
+          alert(error.message || "An error occurred during deletion");
         }
       }
     </script>

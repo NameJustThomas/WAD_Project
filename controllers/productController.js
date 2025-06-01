@@ -175,48 +175,56 @@ exports.search = async (req, res) => {
 // Add to cart
 exports.addToCart = async (req, res) => {
     try {
-        if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Please login to add items to cart',
-                redirect: '/auth/login'
+        const userId = req.user ? req.user.id : null;
+        const productId = req.params.id;
+        const { quantity } = req.body;
+
+        // Validate quantity
+        if (!quantity || isNaN(quantity) || quantity < 1) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid quantity' 
             });
         }
 
-        const productId = req.params.id;
-        const quantity = parseInt(req.body.quantity) || 1;
-        const userId = req.user.id;
-
+        // Check if product exists
         const product = await Product.findById(productId);
         if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Product not found' 
             });
         }
 
+        // Check stock
         if (product.stock < quantity) {
-            return res.status(400).json({
-                success: false,
-                message: 'Not enough stock available'
+            return res.status(400).json({ 
+                success: false, 
+                message: `Only ${product.stock} items available in stock` 
             });
         }
 
-        const cartItem = await Cart.addToCart(userId, productId, quantity);
+        // Add to cart
+        const cartItem = await Cart.addItem(userId, productId, quantity, req.session.cart || []);
         
-        const cartItems = await Cart.getCartItems(userId);
-        const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+        // Update session cart if user is not logged in
+        if (!userId) {
+            req.session.cart = cartItem;
+        }
+
+        // Get updated cart count
+        const cartCount = await Cart.getCartCount(userId, req.session.cart || []);
 
         res.json({
             success: true,
-            message: 'Product added to cart',
+            message: 'Item added to cart',
             cartCount
         });
     } catch (error) {
         console.error('Error in addToCart:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error adding product to cart'
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error adding item to cart' 
         });
     }
 };

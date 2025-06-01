@@ -24,6 +24,7 @@
             <li><a class="dropdown-item" href="/products?gender=men">Men</a></li>
             <li><a class="dropdown-item" href="/products?gender=women">Women</a></li>
             <li><a class="dropdown-item" href="/products?gender=kids">Kids</a></li>
+            <li><a class="dropdown-item" href="/products?gender=unisex">Unisex</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="/products">All Products</a></li>
             <li><a class="dropdown-item" href="/categories">All Categories</a></li>
@@ -53,10 +54,10 @@
         </form>
 
         <!-- Cart Icon -->
-        <a class="nav-link position-relative text-dark" href="/cart" aria-label="Cart">
+        <a class="nav-link position-relative text-dark cart-link" href="/cart" aria-label="Cart">
           <i data-lucide="shopping-cart" class="fs-5"></i>
           <% if (locals.cartCount && cartCount > 0) { %>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark text-white">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-count-badge">
               <%= cartCount %>
             </span>
           <% } %>
@@ -105,12 +106,26 @@
   document.querySelectorAll(".add-to-cart").forEach((button) => {
     button.addEventListener("click", async (e) => {
       e.preventDefault();
-      const productId = e.target.closest(".add-to-cart").dataset.productId;
-      const quantity = 1;
+      const button = e.target.closest(".add-to-cart");
+      if (!button) return;
 
-      button.classList.add("loading");
+      const productId = button.dataset.productId;
+      if (!productId) {
+        showToast("Error", "Invalid product", true);
+        return;
+      }
+
+      const quantity = 1;
+      button.disabled = true;
       const originalContent = button.innerHTML;
       button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+      // Set timeout for loading state
+      const loadingTimeout = setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = originalContent;
+        showToast("Error", "Request timeout", true);
+      }, 10000); // 10 seconds timeout
 
       try {
         const res = await fetch(`/cart/add/${productId}`, {
@@ -121,6 +136,12 @@
           },
           body: JSON.stringify({ quantity }),
         });
+
+        clearTimeout(loadingTimeout);
+
+        if (!res.ok) {
+          throw new Error('Network response was not ok');
+        }
 
         const data = await res.json();
 
@@ -138,7 +159,8 @@
       } catch (err) {
         showToast("Error", err.message, true);
       } finally {
-        button.classList.remove("loading");
+        clearTimeout(loadingTimeout);
+        button.disabled = false;
         button.innerHTML = originalContent;
       }
     });

@@ -43,13 +43,19 @@ exports.index = async (req, res) => {
         const sessionCart = req.session.cart || [];
         
         const cartItems = await Cart.getCartItems(userId, sessionCart);
+        // Map the items to ensure consistent field names
+        const mappedCartItems = cartItems.map(item => ({
+            ...item,
+            product_id: item.product_id || item.id // Ensure product_id is always present
+        }));
+        
         const subtotal = await Cart.getCartTotal(userId, sessionCart);
         const shipping = 10; // Fixed shipping cost
         const total = subtotal + shipping;
 
         res.render('shop/cart', {
             title: 'Shopping Cart',
-            cartItems,
+            cartItems: mappedCartItems,
             subtotal: subtotal.toFixed(2),
             shipping: shipping.toFixed(2),
             total: total.toFixed(2)
@@ -79,35 +85,134 @@ exports.getCount = async (req, res) => {
 
 // Add item to cart
 exports.addItem = async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const { productId } = req.params;
+        await connection.beginTransaction();
+
+        const { id } = req.params;
         const { quantity } = req.body;
         const userId = req.user ? req.user.id : null;
         const sessionCart = req.session.cart || [];
 
-        // Check if product exists
-        const [products] = await pool.query('SELECT * FROM products WHERE id = ?', [productId]);
+        // Constants
+        const MAX_CART_ITEMS = 99; // Maximum items per product in cart
+        const MAX_TOTAL_ITEMS = 999; // Maximum total items in cart
+
+        // Check if product exists and get current stock
+        const [products] = await connection.query(
+            `SELECT p.*, 
+                    COALESCE(c.quantity, 0) as cart_quantity,
+                    (SELECT COUNT(*) FROM cart WHERE user_id = ?) as total_cart_items
+             FROM products p 
+             LEFT JOIN cart c ON p.id = c.product_id AND c.user_id = ? 
+             WHERE p.id = ?`,
+            [userId, userId, id]
+        );
+
         if (!products.length) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         const product = products[0];
+        const currentCartQuantity = parseInt(product.cart_quantity) || 0;
+        const totalCartItems = parseInt(product.total_cart_items) || 0;
+        const requestedQuantity = parseInt(quantity);
+
+        // Validate quantity
+        if (isNaN(requestedQuantity) || requestedQuantity < 1) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Invalid quantity' });
+        }
+
+        // Check maximum items per product
+        if (currentCartQuantity + requestedQuantity > MAX_CART_ITEMS) {
+            await connection.rollback();
+            return res.status(400).json({ 
+                success: false, 
+                message: `Maximum ${MAX_CART_ITEMS} items per product allowed in cart` 
+            });
+        }
+
+        // Check maximum total items
+        if (totalCartItems + requestedQuantity > MAX_TOTAL_ITEMS) {
+            await connection.rollback();
+            return res.status(400).json({ 
+                success: false, 
+                message: `Maximum ${MAX_TOTAL_ITEMS} total items allowed in cart` 
+            });
+        }
 
         // Check if enough stock
-        if (product.stock < quantity) {
-            return res.status(400).json({ success: false, message: 'Not enough stock available' });
+        if (product.stock < (currentCartQuantity + requestedQuantity)) {
+            await connection.rollback();
+            return res.status(400).json({ 
+                success: false, 
+                message: `Only ${product.stock - currentCartQuantity} items available in stock` 
+            });
         }
 
-        // Add to cart
-        const updatedCart = await Cart.addItem(userId, productId, quantity, sessionCart);
+        // Validate product price
+        if (isNaN(product.price) || product.price < 0) {
+            await connection.rollback();
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid product price' 
+            });
+        }
         
         if (!userId) {
-            // Update session cart
-            req.session.cart = updatedCart;
+            // Add to session cart
+            const existingItem = sessionCart.find(item => item.product_id === id);
+            if (existingItem) {
+                existingItem.quantity += requestedQuantity;
+            } else {
+                // Validate product data before adding to session
+                const productData = {
+                    product_id: product.id,
+                    name: product.name,
+                    price: parseFloat(product.price),
+                    discount_price: product.discount_price ? parseFloat(product.discount_price) : null,
+                    image: product.image_url,
+                    quantity: requestedQuantity
+                };
+
+                // Validate product data
+                if (!productData.name || !productData.image || isNaN(productData.price)) {
+                    await connection.rollback();
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Invalid product data' 
+                    });
+                }
+
+                sessionCart.push(productData);
+            }
+            req.session.cart = sessionCart;
+        } else {
+            // Add to database cart
+            const [existingItems] = await connection.query(
+                'SELECT * FROM cart WHERE user_id = ? AND product_id = ? FOR UPDATE',
+                [userId, id]
+            );
+
+            if (existingItems.length > 0) {
+                await connection.query(
+                    'UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?',
+                    [requestedQuantity, userId, id]
+                );
+            } else {
+                await connection.query(
+                    'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
+                    [userId, id, requestedQuantity]
+                );
+        }
         }
 
+        await connection.commit();
+
         // Get updated cart count
-        const cartCount = await Cart.getCartCount(userId, updatedCart);
+        const cartCount = await Cart.getCartCount(userId, sessionCart);
 
         res.json({
             success: true,
@@ -115,8 +220,11 @@ exports.addItem = async (req, res) => {
             cartCount
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Error in addItem:', error);
         res.status(500).json({ success: false, message: 'Error adding item to cart' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -153,21 +261,53 @@ exports.removeItem = async (req, res) => {
         const userId = req.user ? req.user.id : null;
         const sessionCart = req.session.cart || [];
 
-        // Remove item
-        const updatedCart = await Cart.removeItem(userId, productId, sessionCart);
-        
-        if (!userId) {
-            // Update session cart
-            req.session.cart = updatedCart;
+        console.log('Removing item - Product ID:', productId);
+        console.log('User ID:', userId);
+        console.log('Session cart before:', sessionCart);
+
+        if (!productId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Product ID is required' 
+            });
         }
 
-        res.json({
+        // Remove item from cart
+        const cartData = await Cart.removeItem(userId, productId, sessionCart);
+        console.log('Cart data after removal:', cartData);
+
+        // Update session cart if user is not logged in
+        if (!userId) {
+            // Replace the entire session cart with the new one
+            req.session.cart = cartData.items;
+            console.log('Updated session cart:', req.session.cart);
+        }
+
+        // Calculate shipping and total
+        const shipping = 10; // Fixed shipping cost
+        const total = Number(cartData.total) + shipping;
+
+        // Prepare response data
+        const responseData = {
             success: true,
-            message: 'Item removed from cart'
-        });
+            message: 'Item removed from cart',
+            cart: {
+                items: cartData.items,
+                subtotal: Number(cartData.total).toFixed(2),
+                shipping: shipping.toFixed(2),
+                total: total.toFixed(2),
+                totalItems: cartData.totalItems
+            }
+        };
+
+        console.log('Sending response:', responseData);
+        res.json(responseData);
     } catch (error) {
         console.error('Error in removeItem:', error);
-        res.status(500).json({ success: false, message: 'Error removing item from cart' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error removing item from cart' 
+        });
     }
 };
 

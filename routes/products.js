@@ -22,7 +22,7 @@ router.get('/category/:categoryId', productController.getByCategory);
 router.get('/:id', productController.show);
 
 // Cart routes
-router.post('/:id/add-to-cart', (req, res) => cartController.addItem(req, res));
+router.post('/:id/add-to-cart', productController.addToCart);
 
 // Admin routes
 router.post('/', auth, isAdmin, (req, res) => productController.create(req, res));

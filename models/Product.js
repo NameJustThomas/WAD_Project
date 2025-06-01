@@ -118,7 +118,14 @@ class Product {
                 return null;
             }
 
-            return products[0];
+            const product = products[0];
+            return {
+                ...product,
+                price: parseFloat(product.price),
+                discount_price: product.discount_price ? parseFloat(product.discount_price) : null,
+                final_price: parseFloat(product.final_price),
+                stock: parseInt(product.stock)
+            };
         } catch (error) {
             console.error('Error in Product.findById:', error);
             throw error;
@@ -127,17 +134,24 @@ class Product {
 
     static async create(productData) {
         try {
-            const { name, description, price, discount_price, image_url, category_id, stock } = productData;
+            const { name, description, price, discount_price, image_url, category_id, stock, gender } = productData;
             
-            // Xử lý đường dẫn ảnh nếu có
-            let finalImageUrl = image_url;
-            if (image_url && !image_url.startsWith('/images/products/')) {
-                finalImageUrl = `/images/products/${image_url}`;
+            // Xử lý đường dẫn ảnh
+            let finalImageUrl = null;
+            if (image_url) {
+                if (image_url.startsWith('/images/products/')) {
+                    finalImageUrl = image_url;
+                } else if (image_url.startsWith('data:')) {
+                    // Handle base64 image
+                    finalImageUrl = image_url;
+                } else {
+                    finalImageUrl = `/images/products/${image_url}`;
+                }
             }
 
             const [result] = await pool.query(
-                'INSERT INTO products (name, description, price, discount_price, image_url, category_id, stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [name, description, price, discount_price, finalImageUrl, category_id, stock]
+                'INSERT INTO products (name, description, price, discount_price, image_url, category_id, stock, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [name, description, price, discount_price, finalImageUrl, category_id, stock, gender || 'kids']
             );
             return this.findById(result.insertId);
         } catch (error) {
@@ -153,16 +167,30 @@ class Product {
                 data.discount_price = null;
             }
 
+            // Xử lý đường dẫn ảnh
+            let finalImageUrl = data.image_url;
+            if (data.image_url) {
+                if (data.image_url.startsWith('/images/products/')) {
+                    finalImageUrl = data.image_url;
+                } else if (data.image_url.startsWith('data:')) {
+                    // Handle base64 image
+                    finalImageUrl = data.image_url;
+                } else {
+                    finalImageUrl = `/images/products/${data.image_url}`;
+                }
+            }
+
             const [result] = await pool.query(
-                'UPDATE products SET name = ?, description = ?, price = ?, discount_price = ?, image_url = ?, category_id = ?, stock = ? WHERE id = ?',
+                'UPDATE products SET name = ?, description = ?, price = ?, discount_price = ?, image_url = ?, category_id = ?, stock = ?, gender = ? WHERE id = ?',
                 [
                     data.name,
                     data.description,
                     data.price,
                     data.discount_price,
-                    data.image_url,
+                    finalImageUrl,
                     data.category_id,
                     data.stock,
+                    data.gender || 'kids',
                     id
                 ]
             );
@@ -234,6 +262,10 @@ class Product {
             errors.stock = 'Valid stock quantity is required';
         }
 
+        if (!productData.gender || !['men', 'women', 'kids', 'unisex'].includes(productData.gender)) {
+            errors.gender = 'Valid gender is required (men, women, kids, or unisex)';
+        }
+
         return Object.keys(errors).length > 0 ? errors : null;
     }
 
@@ -246,7 +278,8 @@ class Product {
             formatted_price: formatPrice(product.price),
             formatted_discount_price: product.discount_price ? formatPrice(product.discount_price) : null,
             formatted_final_price: formatPrice(product.final_price),
-            has_discount: product.discount_price !== null && product.discount_price < product.price
+            has_discount: product.discount_price !== null && product.discount_price < product.price,
+            image_url: product.image_url || '/images/products/no-image.jpg'
         };
     }
 
@@ -311,6 +344,10 @@ class Product {
         
         if (data.stock && (isNaN(data.stock) || data.stock < 0)) {
             errors.stock = 'Stock must be a non-negative number';
+        }
+        
+        if (data.gender && !['men', 'women', 'kids'].includes(data.gender)) {
+            errors.gender = 'Gender must be men, women, or kids';
         }
         
         return Object.keys(errors).length === 0 ? null : errors;

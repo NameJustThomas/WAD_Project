@@ -14,21 +14,12 @@ const { auth } = require('../middleware/auth');
 
 // Validation middleware
 const validateCheckout = [
-    body('firstName').trim().notEmpty().withMessage('First name is required'),
-    body('lastName').trim().notEmpty().withMessage('Last name is required'),
-    body('email').trim().isEmail().withMessage('Please enter a valid email'),
-    body('address').trim().notEmpty().withMessage('Address is required'),
-    body('city').trim().notEmpty().withMessage('City is required'),
-    body('state').trim().notEmpty().withMessage('State is required'),
-    body('zipCode').trim().notEmpty().withMessage('Zip code is required'),
-    body('cardName').trim().notEmpty().withMessage('Name on card is required'),
-    body('cardNumber').trim().notEmpty().withMessage('Card number is required'),
-    body('expiryDate').trim().notEmpty().withMessage('Expiry date is required'),
-    body('cvv').trim().notEmpty().withMessage('CVV is required')
+    body('addressId').notEmpty().withMessage('Please select a shipping address'),
+    body('paymentMethod').notEmpty().withMessage('Please select a payment method')
 ];
 
 // Routes
-router.get('/', auth, checkoutController.showCheckout);
+router.get('/', auth, checkoutController.getCheckout);
 router.post('/process', auth, validateCheckout, checkoutController.processCheckout);
 
 module.exports = router; 

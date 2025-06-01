@@ -119,7 +119,8 @@ exports.getProducts = async (req, res) => {
             ...product,
             formatted_price: parseFloat(product.price || 0).toFixed(2),
             formatted_discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,
-            category_name: product.category_name || 'Uncategorized'
+            category_name: product.category_name || 'Uncategorized',
+            gender: product.gender || 'kids'
         }));
 
         res.render('admin/products', {
@@ -144,6 +145,27 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ errors });
         }
 
+        // Ensure gender is one of the valid values
+        if (!['men', 'women', 'kids', 'unisex'].includes(req.body.gender)) {
+            req.body.gender = 'kids'; // Default to kids if invalid
+        }
+
+        // Handle image upload if exists
+        if (req.file) {
+            const productName = req.body.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            const timestamp = Date.now();
+            const extension = path.extname(req.file.originalname);
+            const newFilename = `${productName}-${timestamp}${extension}`;
+            
+            // Rename the uploaded file
+            const oldPath = req.file.path;
+            const newPath = path.join(path.dirname(oldPath), newFilename);
+            await fs.rename(oldPath, newPath);
+            
+            // Update the image_url in the request body
+            req.body.image_url = `/images/products/${newFilename}`;
+        }
+
         const product = await Product.create(req.body);
         res.status(201).json({
             success: true,
@@ -164,28 +186,42 @@ exports.updateProduct = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        // Xử lý upload ảnh nếu có
+        // Ensure gender is one of the valid values
+        if (updateData.gender && !['men', 'women', 'kids', 'unisex'].includes(updateData.gender)) {
+            updateData.gender = 'kids'; // Default to kids if invalid
+        }
+
+        // Handle image upload if exists
         if (req.file) {
-            // Lấy thông tin sản phẩm hiện tại
+            // Get current product data
             const currentProduct = await Product.findById(parseInt(id));
             
-            // Xóa ảnh cũ nếu tồn tại và không phải là ảnh mặc định
+            // Delete old image if exists and not default
             if (currentProduct && currentProduct.image_url && !currentProduct.image_url.includes('no-image.jpg')) {
                 const oldImagePath = path.join(__dirname, '../public', currentProduct.image_url);
                 try {
-                    // Kiểm tra file có tồn tại không trước khi xóa
                     await fs.access(oldImagePath);
                     await fs.unlink(oldImagePath);
                 } catch (error) {
-                    // Bỏ qua lỗi nếu file không tồn tại
                     if (error.code !== 'ENOENT') {
                         console.error('Error deleting old image:', error);
                     }
                 }
             }
 
-            // Cập nhật đường dẫn ảnh mới
-            updateData.image_url = `/images/products/${req.file.filename}`;
+            // Create new filename using product name
+            const productName = updateData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            const timestamp = Date.now();
+            const extension = path.extname(req.file.originalname);
+            const newFilename = `${productName}-${timestamp}${extension}`;
+            
+            // Rename the uploaded file
+            const oldPath = req.file.path;
+            const newPath = path.join(path.dirname(oldPath), newFilename);
+            await fs.rename(oldPath, newPath);
+            
+            // Update the image_url in the update data
+            updateData.image_url = `/images/products/${newFilename}`;
         }
 
         // Validate the update data
@@ -217,7 +253,8 @@ exports.updateProduct = async (req, res) => {
             product: {
                 ...updatedProduct,
                 formatted_price: parseFloat(updatedProduct.price).toFixed(2),
-                formatted_discount_price: updatedProduct.discount_price ? parseFloat(updatedProduct.discount_price).toFixed(2) : null
+                formatted_discount_price: updatedProduct.discount_price ? parseFloat(updatedProduct.discount_price).toFixed(2) : null,
+                image_url: updatedProduct.image_url || '/images/products/no-image.jpg'
             }
         });
 
@@ -828,9 +865,10 @@ exports.getProduct = async (req, res) => {
             price: parseFloat(product.price).toFixed(2),
             discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,
             stock: parseInt(product.stock),
-            description: product.description,
-            status: product.status,
-            image_url: product.image_url
+            description: product.description || '',
+            status: product.status || 'active',
+            image_url: product.image_url || '/images/products/no-image.jpg',
+            gender: product.gender || 'kids'
         };
 
         res.json({
@@ -841,7 +879,8 @@ exports.getProduct = async (req, res) => {
         console.error('Error in getProduct:', error);
         res.status(500).json({
             success: false,
-            message: 'Error loading product'
+            message: 'Error loading product',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

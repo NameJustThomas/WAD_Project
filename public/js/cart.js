@@ -30,52 +30,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle quantity buttons and inputs
-    document.querySelectorAll('[data-action]').forEach(element => {
-        element.addEventListener('click', function() {
-            const action = this.dataset.action;
-            const productId = this.dataset.productId;
+    // Handle quantity controls
+    document.querySelectorAll('.quantity-box').forEach(box => {
+        const minusBtn = box.querySelector('.minus');
+        const plusBtn = box.querySelector('.plus');
+        const quantityInput = box.querySelector('.quantity-input');
+        const productId = minusBtn.dataset.productId;
 
-            console.log('Action:', action, 'ProductId:', productId);
-
-            if (!productId && action !== 'clear') {
-                console.error('Missing productId for action:', action);
-                return;
-            }
-
-            const container = this.closest('.cart-item');
-
-            switch(action) {
-                case 'decrease': {
-                    const quantityInput = container.querySelector('.quantity-input');
-                    const currentQty = parseInt(quantityInput.value);
-                    if (currentQty > 1) updateQuantity(productId, currentQty - 1);
-                    break;
+        if (minusBtn && plusBtn && quantityInput) {
+            minusBtn.addEventListener('click', () => {
+                const currentQuantity = parseInt(quantityInput.value);
+                if (currentQuantity > 1) {
+                    updateQuantity(productId, currentQuantity - 1);
                 }
-                case 'increase': {
-                    const quantityInput = container.querySelector('.quantity-input');
-                    const currentQty = parseInt(quantityInput.value);
-                    updateQuantity(productId, currentQty + 1);
-                    break;
+            });
+
+            plusBtn.addEventListener('click', () => {
+                const currentQuantity = parseInt(quantityInput.value);
+                updateQuantity(productId, currentQuantity + 1);
+            });
                 }
-                case 'remove':
-                    if (confirm('Are you sure you want to remove this item?')) removeItem(productId);
-                    break;
-                case 'clear':
-                    if (confirm('Are you sure you want to clear your cart?')) clearCart();
-                    break;
+    });
+
+    // Handle remove buttons
+    document.querySelectorAll('button[data-action="remove"]').forEach(button => {
+        button.addEventListener('click', () => {
+            const productId = button.getAttribute('data-product-id');
+            console.log('Remove button clicked, product ID:', productId);
+            if (productId) {
+                removeItem(productId);
+            } else {
+                console.error('No product ID found on remove button');
+                showNotification('Error', 'Invalid product ID', 'error');
             }
         });
     });
 
-    // Quantity input change handler
-    document.querySelectorAll('.quantity-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const productId = this.dataset.productId;
-            const quantity = parseInt(this.value);
-            if (quantity >= 1) updateQuantity(productId, quantity);
-        });
-    });
+    // Handle clear cart button
+    const clearButton = document.querySelector('[data-action="clear"]');
+    if (clearButton) {
+        clearButton.addEventListener('click', clearCart);
+    }
 });
 
 function showNotification(title, message, type = 'info') {
@@ -108,7 +103,15 @@ function updateQuantity(productId, quantity) {
     .then(data => {
         if (data.success) {
             showNotification('Success', data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
+            // Update the quantity input
+            const quantityInput = document.querySelector(`#quantity_${productId}`);
+            if (quantityInput) {
+                quantityInput.value = quantity;
+            }
+            // Update cart totals
+            if (data.cart) {
+                updateCartTotals(data.cart);
+            }
         } else {
             showNotification('Error', data.message, 'error');
         }
@@ -119,18 +122,93 @@ function updateQuantity(productId, quantity) {
     });
 }
 
+function updateCartTotals(cart) {
+    // Update subtotal
+    const subtotalElement = document.querySelector('.subtotal-amount');
+    if (subtotalElement) {
+        subtotalElement.textContent = `$${cart.subtotal.toFixed(2)}`;
+    }
+
+    // Update total
+    const totalElement = document.querySelector('.total-amount');
+    if (totalElement) {
+        totalElement.textContent = `$${cart.total.toFixed(2)}`;
+    }
+
+    // Update cart count in navbar
+    const cartCountElements = document.querySelectorAll('.cart-count-badge');
+    cartCountElements.forEach(element => {
+        element.textContent = cart.totalItems;
+    });
+}
+
 function removeItem(productId) {
+    if (!productId) {
+        showNotification('Error', 'Invalid product ID', 'error');
+        return;
+    }
+
+    console.log('Removing product with ID:', productId);
+    console.log('Cart item element:', document.querySelector(`.cart-item[data-product-id="${productId}"]`));
+
     fetch(`/cart/remove/${productId}`, {
         method: 'DELETE',
         headers: { 'Accept': 'application/json' }
     })
     .then(res => res.json())
     .then(data => {
+        console.log('Server response:', data);
+        
         if (data.success) {
+            // Find the cart item directly using the data-product-id attribute
+            const cartItem = document.querySelector(`.cart-item[data-product-id="${productId}"]`);
+            console.log('Found cart item:', cartItem);
+            
+            if (cartItem) {
+                // Remove the item from DOM
+                cartItem.remove();
+                console.log('Cart item removed from DOM');
+                
+                // Update cart totals if provided
+                if (data.cart) {
+                    console.log('Updating cart totals:', data.cart);
+                    
+                    // Update subtotal
+                    const subtotalElement = document.querySelector('.subtotal-amount');
+                    if (subtotalElement) {
+                        subtotalElement.textContent = `$${data.cart.subtotal}`;
+                        console.log('Updated subtotal:', data.cart.subtotal);
+                    }
+
+                    // Update total
+                    const totalElement = document.querySelector('.total-amount');
+                    if (totalElement) {
+                        totalElement.textContent = `$${data.cart.total}`;
+                        console.log('Updated total:', data.cart.total);
+                    }
+
+                    // Update cart count in navbar
+                    const cartCountElements = document.querySelectorAll('.cart-count-badge');
+                    cartCountElements.forEach(element => {
+                        element.textContent = data.cart.totalItems;
+                        console.log('Updated cart count:', data.cart.totalItems);
+                    });
+                }
+
+                // Check if cart is empty
+                const remainingItems = document.querySelectorAll('.cart-item');
+                console.log('Remaining items:', remainingItems.length);
+                
+                if (remainingItems.length === 0) {
+                    console.log('Cart is empty, reloading page');
+                    // Reload page to show empty cart state
+                    location.reload();
+                }
+            }
+
             showNotification('Success', data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
         } else {
-            showNotification('Error', data.message, 'error');
+            showNotification('Error', data.message || 'Error removing item from cart', 'error');
         }
     })
     .catch(error => {

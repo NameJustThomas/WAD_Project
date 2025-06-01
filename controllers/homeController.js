@@ -24,7 +24,6 @@ exports.getHome = async (req, res) => {
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
             ORDER BY p.created_at DESC
-            LIMIT 8
         `);
 
         // Get all categories

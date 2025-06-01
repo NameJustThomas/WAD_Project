@@ -21,11 +21,7 @@ class Cart {
 
         // Get cart items from database
         const [items] = await pool.query(`
-            SELECT c.*, p.name, p.image_url as image, p.price, p.discount_price,
-                   CASE 
-                       WHEN p.discount_price IS NOT NULL THEN p.discount_price
-                       ELSE p.price
-                   END as final_price
+            SELECT c.*, p.name, p.price, p.discount_price, p.image_url, p.stock
             FROM cart c
             LEFT JOIN products p ON c.product_id = p.id
             WHERE c.user_id = ?
@@ -33,9 +29,8 @@ class Cart {
 
         return items.map(item => ({
             ...item,
-            price: parseFloat(item.price),
-            discount_price: item.discount_price ? parseFloat(item.discount_price) : null,
-            final_price: parseFloat(item.final_price)
+            product_id: item.product_id,
+            price: item.discount_price || item.price
         }));
     }
 
@@ -118,12 +113,30 @@ class Cart {
 
     static async removeItem(userId, productId, sessionCart = []) {
         if (!userId) {
-            // Remove from session cart
-            const index = sessionCart.findIndex(item => item.product_id === productId);
-            if (index > -1) {
-                sessionCart.splice(index, 1);
-            }
-            return sessionCart;
+            // Convert productId to number for comparison
+            const productIdNum = Number(productId);
+            console.log('Converting product ID to number:', productIdNum);
+
+            // Create a new array without the item to remove
+            const updatedCart = sessionCart.filter(item => Number(item.product_id) !== productIdNum);
+            console.log('Original session cart:', sessionCart);
+            console.log('Updated session cart:', updatedCart);
+
+            // Calculate new totals after removal
+            const total = updatedCart.reduce((sum, item) => {
+                const price = item.discount_price || item.price;
+                return sum + (price * item.quantity);
+            }, 0);
+
+            const totalItems = updatedCart.reduce((sum, item) => sum + item.quantity, 0);
+
+            console.log('New totals after removal:', { total, totalItems });
+
+            return {
+                items: updatedCart,
+                total,
+                totalItems
+            };
         }
 
         // Remove from database cart
@@ -132,7 +145,16 @@ class Cart {
             [userId, productId]
         );
 
-        return this.getCartItems(userId);
+        // Get updated cart data
+        const items = await this.getCartItems(userId);
+        const total = await this.getCartTotal(userId);
+        const totalItems = await this.getCartCount(userId);
+
+        return {
+            items,
+            total,
+            totalItems
+        };
     }
 
     static async clearCart(userId, sessionCart = []) {

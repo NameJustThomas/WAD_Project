@@ -15,7 +15,7 @@ const adminController = require('../controllers/adminController');
 const { auth, isAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-// Apply auth middleware first, then admin middleware
+// Apply auth middleware to all admin routes
 router.use(auth);
 router.use(isAdmin);
 

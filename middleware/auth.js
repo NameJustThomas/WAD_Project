@@ -55,7 +55,7 @@ const isAuthenticated = async (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
+    if (!req.session.user || req.session.user.role !== 'admin') {
         return res.status(403).render('error', {
             title: 'Access Denied',
             message: 'You do not have permission to access this page',

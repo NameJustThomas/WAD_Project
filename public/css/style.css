@@ -329,10 +329,15 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* NEW ARRIVALS Section */
 .new-arrivals-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 10px;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  padding-bottom: 10px;
+  gap: 20px;
 }
+
 .new-arrivals-row::-webkit-scrollbar {
   display: none;
 }
@@ -340,7 +345,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .new-arrival-card-col {
   flex: 0 0 auto;
   width: 270px;
-  padding: 0 15px;
+  padding: 0;
   box-sizing: content-box;
 }
 
@@ -398,13 +403,16 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: 0.8rem;
   margin-bottom: 8px;
 }
+
 .product-rating-new-arrival .fas.fa-star,
 .product-rating-new-arrival .fas.fa-star-half-alt {
   color: #ffb300;
 }
+
 .product-rating-new-arrival .far.fa-star {
   color: #ddcdbe;
 }
+
 .product-rating-new-arrival .rating-text-new-arrival {
   color: #666;
   margin-left: 5px;
@@ -415,17 +423,20 @@ input[type="number"]::-webkit-outer-spin-button {
 .product-price-new-arrival {
   margin-top: auto;
 }
+
 .current-price-new-arrival {
   font-size: 1.05rem;
   font-weight: 700;
   color: #000;
 }
+
 .original-price-display-new-arrival {
   font-size: 0.85rem;
   color: #777;
   text-decoration: line-through;
   margin-left: 7px;
 }
+
 .discount-percentage-badge-new-arrival {
   background-color: #fbe0e5;
   color: #d9534f;
@@ -448,9 +459,9 @@ input[type="number"]::-webkit-outer-spin-button {
   border-radius: 30px;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
-  transition: background-color 0.2s ease, border-color 0.2s ease,
-    color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+
 .btn-view-all-new-arrivals:hover {
   background-color: #f0f0f0;
   border-color: #bbb;
@@ -728,14 +739,33 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .checkout-btn {
-  background-color: black;
-  border-radius: 16px;
-  padding: 12px 20px;
-  transition: background 0.3s ease;
+  background-color: #000 !important;
+  color: #fff !important;
+  padding: 15px 30px !important;
+  border-radius: 25px !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  border: none !important;
+  margin-top: 20px !important;
+  font-size: 16px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .checkout-btn:hover {
-  background-color: #333;
+  background-color: #333 !important;
+  color: #fff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.checkout-btn i {
+  margin-left: 8px !important;
+  transition: transform 0.3s ease !important;
+}
+
+.checkout-btn:hover i {
+  transform: translateX(4px) !important;
 }
 
 .breadcrumb-item a {
