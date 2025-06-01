@@ -57,6 +57,18 @@ exports.getCheckout = async (req, res) => {
         const addresses = await Address.findByUserId(userId);
         const profile = await Profile.findByUserId(userId);
 
+        // Format addresses for the template
+        const savedAddresses = addresses.map(address => ({
+            id: address.id,
+            fullName: `${address.first_name} ${address.last_name}`,
+            phone: profile.phone || '', // Use phone from profile
+            email: profile.email || '', // Use email from profile
+            address: address.address,
+            city: address.city,
+            state: address.state,
+            zipCode: address.zip_code
+        }));
+
         // Get cart items from session
         const cartItems = req.session.cart || [];
         
@@ -76,7 +88,8 @@ exports.getCheckout = async (req, res) => {
             subtotal: subtotal,
             shipping: shipping,
             total: total,
-            addresses: addresses
+            addresses: addresses,
+            savedAddresses: savedAddresses
         });
     } catch (error) {
         console.error('Error in getCheckout:', error);
@@ -93,15 +106,8 @@ exports.processCheckout = async (req, res) => {
 
         const userId = req.user.id;
         const { 
-            address_id,
-            payment_method,
-            first_name,
-            last_name,
-            email,
-            address,
-            city,
-            state,
-            zip_code
+            shippingAddress,
+            payment_method
         } = req.body;
 
         // Validate required fields
@@ -112,52 +118,15 @@ exports.processCheckout = async (req, res) => {
             });
         }
 
-        // Get shipping address
-        let shippingAddress;
-        if (address_id) {
-            // Use existing address
-            const [addresses] = await connection.query(
-                'SELECT * FROM addresses WHERE id = ? AND user_id = ?',
-                [address_id, userId]
-            );
-            if (!addresses.length) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid address selected'
-                });
-            }
-            shippingAddress = addresses[0];
-        } else {
-            // Validate new address fields
-            if (!first_name || !last_name || !email || !address || !city || !state || !zip_code) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'All address fields are required'
-                });
-            }
-
-            // Create new address
-            const [result] = await connection.query(
-                `INSERT INTO addresses (
-                    user_id, first_name, last_name, email, 
-                    address, city, state, zip_code
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [userId, first_name, last_name, email, address, city, state, zip_code]
-            );
-            shippingAddress = {
-                id: result.insertId,
-                first_name,
-                last_name,
-                email,
-                address,
-                city,
-                state,
-                zip_code
-            };
+        if (!shippingAddress) {
+            return res.status(400).json({
+                success: false,
+                message: 'Shipping address is required'
+            });
         }
 
         // Format shipping address
-        const formattedAddress = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip_code}`;
+        const formattedAddress = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}`;
 
         // Get cart items and calculate total
         const cartItems = await Cart.getCartItems(userId);

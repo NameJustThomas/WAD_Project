@@ -472,12 +472,12 @@
       // Submit updated product data
       async function updateProduct() {
         try {
-          const form = document.getElementById("editProductForm");
+        const form = document.getElementById("editProductForm");
           if (!form) {
             throw new Error('Form not found');
           }
 
-          const formData = new FormData(form);
+        const formData = new FormData(form);
           const productId = formData.get("id");
 
           if (!productId) {
@@ -493,11 +493,11 @@
           }
 
           const response = await fetch(`/admin/products/${productId}`, {
-            method: "PUT",
-            body: formData,
+              method: "PUT",
+              body: formData,
           });
 
-          const result = await response.json();
+            const result = await response.json();
 
           if (!response.ok) {
             throw new Error(result.message || "Failed to update product");
@@ -527,7 +527,7 @@
             method: "DELETE",
           });
 
-          const result = await response.json();
+            const result = await response.json();
 
           if (!response.ok) {
             throw new Error(result.message || "Failed to delete product");

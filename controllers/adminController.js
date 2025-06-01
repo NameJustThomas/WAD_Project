@@ -124,7 +124,7 @@ exports.index = async (req, res) => {
         });
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        res.status(500).render('error', { 
+        res.status(500).render('error', {
             title: 'Error',
             message: 'Error loading dashboard',
             error: process.env.NODE_ENV === 'development' ? error : {}
@@ -634,7 +634,7 @@ exports.analytics = async (req, res) => {
         // Get monthly sales data
         const monthlySales = await Order.getMonthlySales(6);
         const formattedMonthlySales = Order.formatMonthlySalesData(monthlySales);
-        
+
         // Get recent orders
         const recentOrders = await Order.getRecentOrders(5);
 

@@ -25,8 +25,8 @@ router.put('/update/:productId', cartController.updateQuantity);
 router.delete('/remove/:productId', cartController.removeItem);
 router.delete('/clear', cartController.clearCart);
 
-// Checkout - yêu cầu auth
-router.post('/checkout', auth, cartController.checkout);
+// Checkout - không yêu cầu auth để cho phép chuyển hướng đến login
+router.post('/checkout', cartController.checkout);
 
 // Apply coupon
 router.post('/apply-coupon', cartController.applyCoupon);

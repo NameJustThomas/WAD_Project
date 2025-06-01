@@ -256,7 +256,7 @@ function showNotification(message, type = 'success') {
     notification.style.animation = 'slideIn 0.5s ease-out';
 
     document.body.appendChild(notification);
-
+    
     // Remove notification after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.5s ease-out';

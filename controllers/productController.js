@@ -182,7 +182,7 @@ exports.addToCart = async (req, res) => {
         // Validate quantity
         if (!quantity || isNaN(quantity) || quantity < 1) {
             return res.status(400).json({ 
-                success: false, 
+                success: false,
                 message: 'Invalid quantity' 
             });
         }
@@ -190,16 +190,16 @@ exports.addToCart = async (req, res) => {
         // Check if product exists
         const product = await Product.findById(productId);
         if (!product) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Product not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
             });
         }
 
         // Check stock
         if (product.stock < quantity) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: `Only ${product.stock} items available in stock` 
             });
         }
@@ -222,8 +222,8 @@ exports.addToCart = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in addToCart:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Error adding item to cart' 
         });
     }

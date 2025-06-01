@@ -4,10 +4,76 @@
  * Features:
  * - View order history
  * - View order details
+ * - Create new order
  */
 
 const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
+const Cart = require('../models/Cart');
+
+// Create new order
+exports.createOrder = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const userId = req.user.id;
+        const { shippingAddress, paymentMethod } = req.body;
+
+        // Get cart items
+        const cartItems = await Cart.getCartItems(userId);
+        if (!cartItems.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cart is empty'
+            });
+        }
+
+        // Calculate total amount
+        const totalAmount = cartItems.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
+
+        // Create order
+        const orderId = await Order.create({
+            userId,
+            totalAmount,
+            shippingAddress,
+            paymentMethod,
+            status: 'pending'
+        });
+
+        // Create order items
+        for (const item of cartItems) {
+            await OrderItem.create(
+                orderId,
+                item.product_id,
+                item.quantity,
+                item.price
+            );
+        }
+
+        // Clear cart
+        await Cart.clearCart(userId);
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: 'Order created successfully',
+            orderId
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error in createOrder:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating order'
+        });
+    } finally {
+        connection.release();
+    }
+};
 
 // Get user's orders
 exports.getOrders = async (req, res) => {

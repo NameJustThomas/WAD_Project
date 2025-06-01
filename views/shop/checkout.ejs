@@ -43,172 +43,65 @@
       <div class="col-lg-8">
         <div class="card shadow-sm rounded">
           <div class="card-body p-4">
-            <form id="checkout-form" action="/checkout/process" method="POST" novalidate>
+            <form id="checkout-form" action="/checkout/process" method="POST">
               <h5 class="fw-bold mb-4">Shipping Information</h5>
 
-              <% if (addresses && addresses.length > 0) { %>
-                <div class="mb-4">
-                  <label class="form-label">Select Shipping Address</label>
-                  <select class="form-select" name="addressId" required>
-                    <option value="">Choose a saved address</option>
-                    <% addresses.forEach(address => { %>
-                      <option value="<%= address.id %>">
-                        <%= address.first_name %> <%= address.last_name %> - <%= address.address %>, <%= address.city %>, <%= address.state %> <%= address.zip_code %>
-                      </option>
-                    <% }); %>
-                  </select>
-                </div>
-              <% } %>
-
-              <div class="mb-4">
-                <h6 class="fw-bold">Or enter a new address:</h6>
-              </div>
-
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label for="firstName" class="form-label">First Name</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="firstName"
-                    name="firstName"
-                    required
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label for="lastName" class="form-label">Last Name</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="lastName"
-                    name="lastName"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  id="email"
-                  name="email"
-                  required
-                />
-              </div>
-
-              <div class="mb-3">
-                <label for="address" class="form-label">Address</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="address"
-                  name="address"
-                  required
-                />
-              </div>
-
-              <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                  <label for="city" class="form-label">City</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="city"
-                    name="city"
-                    required
-                  />
-                </div>
-                <div class="col-md-3">
-                  <label for="state" class="form-label">State</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="state"
-                    name="state"
-                    required
-                  />
-                </div>
-                <div class="col-md-3">
-                  <label for="zipCode" class="form-label">Zip Code</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="zipCode"
-                    name="zipCode"
-                    required
-                  />
+              <!-- Shipping Address Section -->
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Shipping Address</h5>
+                  
+                  <!-- Address Form -->
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Full Name</label>
+                      <input type="text" class="form-control" name="fullName" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Phone Number</label>
+                      <input type="tel" class="form-control" name="phone" required>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-control" name="address" required>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">City</label>
+                      <input type="text" class="form-control" name="city" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label class="form-label">State</label>
+                      <input type="text" class="form-control" name="state" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label class="form-label">ZIP Code</label>
+                      <input type="text" class="form-control" name="zipCode" required>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <h5 class="fw-bold mb-4">Payment Information</h5>
-
-              <div class="mb-3">
-                <label class="form-label">Payment Method</label>
-                <select class="form-select" name="paymentMethod" required>
-                  <option value="">Select payment method</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="paypal">PayPal</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="cardName" class="form-label">Name on Card</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cardName"
-                  name="cardName"
-                  required
-                />
-              </div>
-
-              <div class="mb-3">
-                <label for="cardNumber" class="form-label">Card Number</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cardNumber"
-                  name="cardNumber"
-                  required
-                  maxlength="19"
-                  placeholder="xxxx xxxx xxxx xxxx"
-                />
-              </div>
-
-              <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                  <label for="expiryDate" class="form-label">Expiry Date</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="expiryDate"
-                    name="expiryDate"
-                    placeholder="MM/YY"
-                    required
-                    maxlength="5"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label for="cvv" class="form-label">CVV</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="cvv"
-                    name="cvv"
-                    required
-                    maxlength="3"
-                  />
+              <!-- Payment Method Section -->
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Payment Method</h5>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" checked>
+                    <label class="form-check-label" for="cod">
+                      Cash on Delivery
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                class="btn btn-dark w-100 fw-semibold"
-              >
-                Place Order
-              </button>
+              <!-- Place Order Button -->
+              <button type="submit" id="place-order-btn" class="btn btn-primary w-100">Place Order</button>
             </form>
           </div>
         </div>
@@ -251,39 +144,6 @@
   <%- include('../partials/footer') %>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.getElementById('checkout-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const form = e.target;
-      if (!form.checkValidity()) {
-        e.stopPropagation();
-        form.classList.add('was-validated');
-        return;
-      }
-      form.submit();
-    });
-
-    // Format card number input
-    document.getElementById('cardNumber').addEventListener('input', function (e) {
-      let value = e.target.value.replace(/\D/g, '');
-      value = value.match(/.{1,4}/g)?.join(' ') || '';
-      e.target.value = value;
-    });
-
-    // Format expiry date input
-    document.getElementById('expiryDate').addEventListener('input', function (e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length > 2) {
-        value = value.slice(0, 2) + '/' + value.slice(2, 4);
-      }
-      e.target.value = value;
-    });
-
-    // Format CVV input
-    document.getElementById('cvv').addEventListener('input', function (e) {
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
-    });
-  </script>
+  <script src="/js/checkout.js"></script>
 </body>
 </html>

@@ -145,7 +145,7 @@ class Product {
                     // Handle base64 image
                     finalImageUrl = image_url;
                 } else {
-                    finalImageUrl = `/images/products/${image_url}`;
+                finalImageUrl = `/images/products/${image_url}`;
                 }
             }
 

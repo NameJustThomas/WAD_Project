@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Checkout error:', error);
                 showNotification('Error', 'Failed to process checkout. Please try again.', 'error');
             }
-        });
+    });
     }
 });
 
