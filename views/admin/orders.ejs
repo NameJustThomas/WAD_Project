@@ -8,86 +8,168 @@
  * - Order status management
  * - Order search and filter
  * - Order statistics
- -->
-
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - Admin Panel</title>
+    <title>FASHION - Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: #343a40;
-            color: white;
-        }
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-        }
-        .sidebar a:hover {
-            color: #17a2b8;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+    <%- include('../partials/navbar') %>
+
     <div class="container-fluid">
         <div class="row">
-            <%- include('partials/sidebar', { path: '/admin/orders' }) %>
+            <!-- Sidebar -->
+            <div class="col-md-2 col-lg-2 col-xl-2 bg-light sidebar">
+                <%- include('partials/sidebar', { path: '/admin/orders' }) %>
+            </div>
 
             <!-- Main Content -->
-            <div class="col-md-10 p-4">
-                <h2 class="mb-4">Manage Orders</h2>
+            <div class="col-md-10 col-lg-10 col-xl-10">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">$24,569</div>
+                        <div class="stat-label">TOTAL SALES</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">394</div>
+                        <div class="stat-label">TOTAL ORDERS</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,829</div>
+                        <div class="stat-label">TOTAL CUSTOMERS</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">$54.32</div>
+                        <div class="stat-label">AVERAGE ORDER VALUE</div>
+                    </div>
+                </div>
 
-                <!-- Orders Table -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Total Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% if (orders && orders.length > 0) { %>
-                                        <% orders.forEach(order => { %>
-                                            <tr>
-                                                <td><%= order.id || 'N/A' %></td>
-                                                <td><%= order.user_name || 'Guest' %></td>
-                                                <td>$<%= order.formatted_amount %></td>
-                                                <td>
-                                                    <select class="form-select form-select-sm status-select" data-order-id="<%= order.id %>">
-                                                        <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pending</option>
-                                                        <option value="processing" <%= order.status === 'processing' ? 'selected' : '' %>>Processing</option>
-                                                        <option value="shipped" <%= order.status === 'shipped' ? 'selected' : '' %>>Shipped</option>
-                                                        <option value="delivered" <%= order.status === 'delivered' ? 'selected' : '' %>>Delivered</option>
-                                                        <option value="cancelled" <%= order.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                                    </select>
-                                                </td>
-                                                <td><%= order.formatted_date %></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-info view-items" data-order-id="<%= order.id %>">
-                                                        View Items
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <% }); %>
-                                    <% } else { %>
-                                        <tr>
-                                            <td colspan="6" class="text-center">No orders found</td>
-                                        </tr>
-                                    <% } %>
-                                </tbody>
-                            </table>
+                <!-- Main Content Grid -->
+                <div class="main-grid">
+                    <!-- Sales Overview -->
+                    <div class="chart-section">
+                        <div class="section-title">SALES OVERVIEW</div>
+                        <div class="chart-container">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Products -->
+                    <div class="progress-section">
+                        <div class="section-title">TOP PRODUCTS</div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>PRODUCT A</span>
+                                <span>75%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>PRODUCT B</span>
+                                <span>62%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 62%"></div>
+                            </div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>PRODUCT C</span>
+                                <span>48%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 48%"></div>
+                            </div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>PRODUCT D</span>
+                                <span>31%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 31%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Grid -->
+                <div class="bottom-grid">
+                    <!-- Recent Activity -->
+                    <div class="activity-section">
+                        <div class="section-title" style="color: white;">RECENT ACTIVITY</div>
+                        <div class="activity-item">
+                            <div class="activity-icon"></div>
+                            <span>NEW ORDER FROM CUSTOMER</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon"></div>
+                            <span>PRODUCT RESTOCKED</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon"></div>
+                            <span>ORDER SHIPPED</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon"></div>
+                            <span>CUSTOMER SUPPORT</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon"></div>
+                            <span>PAYMENT RECEIVED</span>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="orders-section">
+                        <div class="section-title">RECENT ORDERS</div>
+                        <div class="order-item">
+                            <span>ORDER #1234</span>
+                            <span>$124.99</span>
+                        </div>
+                        <div class="order-item">
+                            <span>ORDER #1235</span>
+                            <span>$89.50</span>
+                        </div>
+                        <div class="order-item">
+                            <span>ORDER #1236</span>
+                            <span>$156.75</span>
+                        </div>
+                        <div class="order-item">
+                            <span>ORDER #1237</span>
+                            <span>$93.25</span>
+                        </div>
+                        <div class="order-item">
+                            <span>ORDER #1238</span>
+                            <span>$178.00</span>
+                        </div>
+                        <div class="order-item">
+                            <span>ORDER #1239</span>
+                            <span>$67.99</span>
+                        </div>
+                    </div>
+
+                    <!-- Sales Distribution -->
+                    <div class="sales-distribution">
+                        <div class="section-title">SALES DISTRIBUTION</div>
+                        <div class="donut-chart">
+                            <canvas id="donutChart" width="150" height="150"></canvas>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #666;">
+                            <div>● ONLINE SALES</div>
+                            <div>● RETAIL SALES</div>
+                            <div>● WHOLESALE</div>
                         </div>
                     </div>
                 </div>
@@ -95,90 +177,63 @@
         </div>
     </div>
 
-    <!-- Order Items Modal -->
-    <div class="modal fade" id="orderItemsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Order Items</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderItemsBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Floating Action Button -->
+    <button class="floating-action">
+        <i class="fas fa-plus"></i>
+    </button>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Handle status change
-        document.querySelectorAll('.status-select').forEach(select => {
-            select.addEventListener('change', async function() {
-                const orderId = this.dataset.orderId;
-                const newStatus = this.value;
-                
-                try {
-                    const response = await fetch(`/admin/orders/${orderId}/status`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ status: newStatus })
-                    });
-                    
-                    if (response.ok) {
-                        alert('Order status updated successfully');
-                    } else {
-                        throw new Error('Failed to update order status');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error updating order status');
-                    this.value = this.dataset.originalValue;
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    borderColor: '#d81b60',
+                    backgroundColor: 'rgba(216, 27, 96, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(216, 27, 96, 0.1)' }
+                    },
+                    x: { grid: { display: false } }
                 }
-            });
+            }
         });
 
-        // Handle view items
-        document.querySelectorAll('.view-items').forEach(button => {
-            button.addEventListener('click', async function() {
-                const orderId = this.dataset.orderId;
-                
-                try {
-                    const response = await fetch(`/admin/orders/${orderId}/items`);
-                    const items = await response.json();
-                    
-                    const itemsHtml = items.map(item => `
-                        <tr>
-                            <td>${item.product_name || 'N/A'}</td>
-                            <td>${item.quantity || 0}</td>
-                            <td>$${item.formatted_price || '0.00'}</td>
-                            <td>$${item.formatted_total || '0.00'}</td>
-                        </tr>
-                    `).join('');
-                    
-                    document.getElementById('orderItemsBody').innerHTML = itemsHtml;
-                    new bootstrap.Modal(document.getElementById('orderItemsModal')).show();
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error loading order items');
-                }
-            });
+        const donutCtx = document.getElementById('donutChart').getContext('2d');
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Online', 'Retail', 'Wholesale'],
+                datasets: [{
+                    data: [60, 30, 10],
+                    backgroundColor: ['#d81b60', '#f06292', '#f8bbd9'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        document.querySelector('.floating-action').addEventListener('click', function() {
+            alert('Add new item!');
         });
     </script>
 </body>
-</html> 
+</html>
