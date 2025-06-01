@@ -258,3 +258,15 @@ INSERT INTO feedbacks (name, rating, content) VALUES
 ('Hanh Bui', 2, 'Product arrived damaged. Awaiting support response.'),
 ('Trung Tuan', 5, 'Top-notch service and product. Will refer friends.'),
 ('Kim Chi', 4, 'Good deal for the price. Smooth transaction.');
+
+-- Update product image URLs
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE products 
+SET image_url = CASE 
+    WHEN image_url IS NULL THEN '/images/products/no-image.jpg'
+    WHEN image_url LIKE '/images/products/%' THEN image_url
+    ELSE CONCAT('/images/products/', image_url)
+END;
+
+SET SQL_SAFE_UPDATES = 1;

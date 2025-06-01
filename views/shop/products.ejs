@@ -55,7 +55,7 @@
               <div class="category-product-card-col">
                 <a href="/products/<%= product.id %>" class="text-decoration-none text-dark">
                   <div class="position-relative" style="padding-top: 100%; overflow: hidden;">
-                    <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" alt="<%= product.name %>" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" />
+                    <img src="<%= product.image_url %>" alt="<%= product.name %>" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" onerror="this.src='/images/products/no-image.jpg'" />
                     <% if (discount > 0) { %>
                       <span class="position-absolute top-0 end-0 badge bg-danger m-2">-<%= discount %>%</span>
                     <% } %>
@@ -109,7 +109,7 @@
                 <div class="category-product-card-col">
                   <a href="/products/<%= product.id %>" class="text-decoration-none text-dark">
                     <div class="position-relative" style="padding-top: 100%; overflow: hidden;">
-                      <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" alt="<%= product.name %>" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" />
+                      <img src="<%= product.image_url %>" alt="<%= product.name %>" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" onerror="this.src='/images/products/no-image.jpg'" />
                       <% if (discount > 0) { %>
                         <span class="position-absolute top-0 end-0 badge bg-danger m-2">-<%= discount %>%</span>
                       <% } %>

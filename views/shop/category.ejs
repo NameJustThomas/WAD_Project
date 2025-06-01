@@ -107,7 +107,7 @@
               <div class="col-sm-6 col-md-4 mb-4">
                 <a href="/products/<%= product.id %>" class="text-decoration-none text-dark">
                   <div class="card product-card h-100 font-jack-frost">
-                    <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="card-img-top" alt="<%= product.name %>">
+                    <img src="<%= product.image_url %>" class="card-img-top" alt="<%= product.name %>" onerror="this.src='/images/products/no-image.jpg'">
                     <div class="card-body text-center">
                       <h6 class="card-title fw-bold text-uppercase"><%= product.name %></h6>
                       <div class="mb-1">
@@ -115,11 +115,11 @@
                       </div>
                       <div class="d-flex justify-content-center align-items-center gap-2">
                         <% if (product.discount_price) { %>
-                          <small class="text-muted text-decoration-line-through">$<%= product.original_price %></small>
+                          <small class="text-muted text-decoration-line-through">$<%= product.price %></small>
                           <strong class="text-danger">$<%= product.discount_price %></strong>
-                          <span class="badge bg-danger">-20%</span>
+                          <span class="badge bg-danger">-<%= Math.round(((product.price - product.discount_price) / product.price) * 100) %>%</span>
                         <% } else { %>
-                          <strong>$<%= product.original_price %></strong>
+                          <strong>$<%= product.price %></strong>
                         <% } %>
                       </div>
                     </div>

@@ -15,7 +15,11 @@ class Category {
     static async findAll() {
         try {
             const [categories] = await pool.query('SELECT * FROM categories ORDER BY name');
-            return categories;
+            // Format image paths
+            return categories.map(category => ({
+                ...category,
+                image_url: `/images/categories/${category.name.toLowerCase()}.jpg`
+            }));
         } catch (error) {
             console.error('Error in Category.findAll:', error);
             throw error;
@@ -49,7 +53,7 @@ class Category {
         try {
             const [result] = await pool.query(
                 'INSERT INTO categories (name, description, image_url) VALUES (?, ?, ?)',
-                [categoryData.name, categoryData.description, categoryData.image]
+                [categoryData.name, categoryData.description, categoryData.image_url]
             );
             return result.insertId;
         } catch (error) {
@@ -61,8 +65,8 @@ class Category {
     static async update(id, categoryData) {
         try {
             const [result] = await pool.query(
-                'UPDATE categories SET name = ?, description = ?, image = ? WHERE id = ?',
-                [categoryData.name, categoryData.description, categoryData.image, id]
+                'UPDATE categories SET name = ?, description = ?, image_url = ? WHERE id = ?',
+                [categoryData.name, categoryData.description, categoryData.image_url, id]
             );
             return result.affectedRows > 0;
         } catch (error) {
@@ -112,8 +116,8 @@ class Category {
             errors.description = 'Category description is required';
         }
 
-        if (!categoryData.image) {
-            errors.image = 'Category image is required';
+        if (!categoryData.image_url) {
+            errors.image_url = 'Category image is required';
         }
 
         return Object.keys(errors).length > 0 ? errors : null;
@@ -130,8 +134,8 @@ class Category {
             errors.description = 'Description must not exceed 500 characters';
         }
 
-        if (data.image && data.image.length > 255) {
-            errors.image = 'Image URL must not exceed 255 characters';
+        if (data.image_url && data.image_url.length > 255) {
+            errors.image_url = 'Image URL must not exceed 255 characters';
         }
 
         return Object.keys(errors).length === 0 ? null : errors;

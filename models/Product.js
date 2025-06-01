@@ -21,7 +21,12 @@ class Product {
             const params = [];
 
             let query = `
-                SELECT p.*, c.name as category_name
+                SELECT p.*, c.name as category_name,
+                       CASE 
+                           WHEN p.image_url IS NULL THEN '/images/products/no-image.jpg'
+                           WHEN p.image_url LIKE '/images/products/%' THEN p.image_url
+                           ELSE CONCAT('/images/products/', p.image_url)
+                       END as image_url
                 FROM products p 
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE 1=1
@@ -64,7 +69,22 @@ class Product {
             params.push(limit, offset);
 
             const [products] = await pool.query(query, params);
-            return products;
+            
+            // Format products
+            const formattedProducts = products.map(product => ({
+                ...product,
+                price: parseFloat(product.price),
+                discount_price: product.discount_price ? parseFloat(product.discount_price) : null,
+                final_price: parseFloat(product.final_price),
+                stock: parseInt(product.stock)
+            }));
+            
+            // Log image URLs for debugging
+            formattedProducts.forEach(product => {
+                console.log(`Product ${product.id} - ${product.name}: ${product.image_url}`);
+            });
+            
+            return formattedProducts;
         } catch (error) {
             console.error('Error in Product.findAll:', error);
             throw error;
@@ -108,7 +128,12 @@ class Product {
                        CASE 
                            WHEN p.discount_price IS NOT NULL THEN p.discount_price
                            ELSE p.price
-                       END as final_price
+                       END as final_price,
+                       CASE 
+                           WHEN p.image_url IS NULL THEN '/images/products/no-image.jpg'
+                           WHEN p.image_url LIKE '/images/products/%' THEN p.image_url
+                           ELSE CONCAT('/images/products/', p.image_url)
+                       END as image_url
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE p.id = ?
@@ -119,13 +144,18 @@ class Product {
             }
 
             const product = products[0];
-            return {
+            const formattedProduct = {
                 ...product,
                 price: parseFloat(product.price),
                 discount_price: product.discount_price ? parseFloat(product.discount_price) : null,
                 final_price: parseFloat(product.final_price),
                 stock: parseInt(product.stock)
             };
+            
+            // Log image URL for debugging
+            console.log(`Product ${formattedProduct.id} - ${formattedProduct.name}: ${formattedProduct.image_url}`);
+            
+            return formattedProduct;
         } catch (error) {
             console.error('Error in Product.findById:', error);
             throw error;
@@ -270,7 +300,7 @@ class Product {
     }
 
     static formatProduct(product) {
-        return {
+        const formattedProduct = {
             ...product,
             price: parseFloat(product.price),
             discount_price: product.discount_price ? parseFloat(product.discount_price) : null,
@@ -278,9 +308,13 @@ class Product {
             formatted_price: formatPrice(product.price),
             formatted_discount_price: product.discount_price ? formatPrice(product.discount_price) : null,
             formatted_final_price: formatPrice(product.final_price),
-            has_discount: product.discount_price !== null && product.discount_price < product.price,
-            image_url: product.image_url || '/images/products/no-image.jpg'
+            has_discount: product.discount_price !== null && product.discount_price < product.price
         };
+        
+        // Log formatted image URL for debugging
+        console.log(`Formatted product ${product.id} - ${product.name}: ${formattedProduct.image_url}`);
+        
+        return formattedProduct;
     }
 
     static formatProducts(products) {
