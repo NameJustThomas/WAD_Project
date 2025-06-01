@@ -12,7 +12,7 @@ const orderController = require('../controllers/orderController');
 const { auth } = require('../middleware/auth');
 
 // User order routes
-router.get('/orders', auth, orderController.getOrders);
-router.get('/orders/:id', auth, orderController.getOrderDetails);
+router.get('/', auth, orderController.getOrders);
+router.get('/:id', auth, orderController.getOrderDetails);
 
 module.exports = router; 

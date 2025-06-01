@@ -10,7 +10,7 @@
  */
 
 const User = require('../models/User');
-const UserProfile = require('../models/UserProfile');
+const Profile = require('../models/profile');
 const Address = require('../models/Address');
 const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
@@ -54,7 +54,7 @@ exports.getCheckout = async (req, res) => {
         const userId = req.user.id;
         const user = await User.findById(userId);
         const addresses = await Address.findByUserId(userId);
-        const profile = await UserProfile.findByUserId(userId);
+        const profile = await Profile.findByUserId(userId);
 
         // Lấy giỏ hàng từ session
         const cart = req.session.cart || [];
@@ -109,7 +109,7 @@ exports.processCheckout = async (req, res) => {
         }
 
         // Check and update profile if needed
-        let profile = await UserProfile.findByUserId(userId);
+        let profile = await Profile.findByUserId(userId);
         if (!profile) {
             // Validate profile data
             const errors = validationResult(req);
@@ -119,7 +119,7 @@ exports.processCheckout = async (req, res) => {
             }
 
             // Create new profile
-            await UserProfile.create({
+            await Profile.create({
                 userId,
                 firstName,
                 lastName,

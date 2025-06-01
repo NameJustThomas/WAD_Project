@@ -11,6 +11,24 @@ const getUserById = async (id) => {
   return rows[0];
 };
 
+const findByUserId = async (userId) => {
+  const [rows] = await db.execute(
+    `SELECT * FROM profiles WHERE user_id = ? LIMIT 1`,
+    [userId]
+  );
+  return rows[0];
+};
+
+const create = async (profileData) => {
+  const { userId, firstName, lastName, phone } = profileData;
+  const [result] = await db.execute(
+    `INSERT INTO profiles (user_id, first_name, last_name, phone)
+     VALUES (?, ?, ?, ?)`,
+    [userId, firstName, lastName, phone]
+  );
+  return result.insertId;
+};
+
 const updateUserProfile = async (id, profileData) => {
   const { first_name, last_name, address, city, state, zip_code } = profileData;
 
@@ -26,5 +44,7 @@ const updateUserProfile = async (id, profileData) => {
 
 module.exports = {
   getUserById,
+  findByUserId,
+  create,
   updateUserProfile,
 };

@@ -76,7 +76,8 @@ const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
 const couponRouter = require('./routes/coupons');
 const checkoutRoutes = require('./routes/checkout');
-const profileRouter = require('./routes/profile'); // ✅ Added profile route
+const profileRouter = require('./routes/profile');
+const ordersRouter = require('./routes/orders');
 
 // Use routes
 app.use('/', homeRouter);
@@ -87,7 +88,8 @@ app.use('/admin', adminRouter);
 app.use('/', authRouter);
 app.use('/', couponRouter);
 app.use('/checkout', checkoutRoutes);
-app.use('/profile', profileRouter); // ✅ Register profile route
+app.use('/profile', profileRouter);
+app.use('/account/orders', ordersRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
