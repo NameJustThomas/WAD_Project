@@ -20,7 +20,7 @@
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-2 col-lg-2 col-xl-2 bg-light sidebar">
-                <%- include('partials/sidebar', { path: '/admin/orders' }) %>
+                <%- include('partials/sidebar', { path: '/admin' }) %>
             </div>
 
             <!-- Main Content -->
@@ -28,20 +28,20 @@
                 <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-value">$24,569</div>
+                        <div class="stat-value">$<%= totalRevenue %></div>
                         <div class="stat-label">TOTAL SALES</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">394</div>
+                        <div class="stat-value"><%= totalOrders %></div>
                         <div class="stat-label">TOTAL ORDERS</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">1,829</div>
-                        <div class="stat-label">TOTAL CUSTOMERS</div>
+                        <div class="stat-value"><%= pendingOrders %></div>
+                        <div class="stat-label">PENDING ORDERS</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">$54.32</div>
-                        <div class="stat-label">AVERAGE ORDER VALUE</div>
+                        <div class="stat-value"><%= completedOrders %></div>
+                        <div class="stat-label">COMPLETED ORDERS</div>
                     </div>
                 </div>
 

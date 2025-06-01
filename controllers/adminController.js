@@ -38,67 +38,93 @@ exports.isAdmin = (req, res, next) => {
 // Admin dashboard
 exports.index = async (req, res) => {
     try {
-        // Get dashboard statistics
-        const [
-            totalProducts,
-            totalCategories,
-            totalOrders,
-            totalUsers,
-            recentOrders,
-            topProducts,
-            orderStats,
-            monthlySales
-        ] = await Promise.all([
-            Product.count(),
-            Category.count(),
-            Order.count(),
-            User.count(),
-            Order.findRecent(5),
-            Product.getTopSelling(5),
-            Order.getLast30DaysStats(),
-            Order.getMonthlySales(6)
-        ]);
+        // Get total orders
+        const [totalOrdersResult] = await pool.query('SELECT COUNT(*) as count FROM orders');
+        const totalOrders = totalOrdersResult[0].count;
 
-        // Format data for display
+        // Get total revenue
+        const [totalRevenueResult] = await pool.query('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders');
+        const totalRevenue = totalRevenueResult[0].total;
+
+        // Get pending orders count
+        const [pendingOrdersResult] = await pool.query('SELECT COUNT(*) as count FROM orders WHERE status = ?', ['pending']);
+        const pendingOrders = pendingOrdersResult[0].count;
+
+        // Get completed orders count
+        const [completedOrdersResult] = await pool.query('SELECT COUNT(*) as count FROM orders WHERE status = ?', ['completed']);
+        const completedOrders = completedOrdersResult[0].count;
+
+        // Get recent orders with formatted data
+        const [recentOrders] = await pool.query(`
+            SELECT o.*, CONCAT(p.first_name, ' ', p.last_name) as user_name 
+            FROM orders o 
+            LEFT JOIN profiles p ON o.user_id = p.user_id 
+            ORDER BY o.created_at DESC 
+            LIMIT 5
+        `);
+
+        // Format recent orders data
         const formattedRecentOrders = recentOrders.map(order => ({
-            ...order,
+            id: order.id,
+            user_name: order.user_name || 'Guest',
             formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
+            status: order.status,
             formatted_date: new Date(order.created_at).toLocaleDateString()
         }));
 
-        const formattedTopProducts = topProducts.map(product => ({
-            ...product,
-            formatted_price: parseFloat(product.price || 0).toFixed(2)
-        }));
+        // Get monthly sales data
+        const [monthlySales] = await pool.query(`
+            SELECT 
+                DATE_FORMAT(created_at, '%Y-%m') as month,
+                SUM(total_amount) as total
+            FROM orders
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            ORDER BY month ASC
+            LIMIT 6
+        `);
 
-        const formattedMonthlySales = monthlySales.map(sale => ({
-            month: new Date(sale.year, sale.month - 1).toLocaleString('default', { month: 'short' }),
-            total: parseFloat(sale.total || 0)
-        }));
-
-        // Ensure orderStats has default values
-        const safeOrderStats = {
-            totalRevenue: orderStats?.totalRevenue || 0,
-            pendingOrders: orderStats?.pendingOrders || 0,
-            completedOrders: orderStats?.completedOrders || 0
+        // Format monthly sales data for chart
+        const monthlySalesData = {
+            type: 'line',
+            data: {
+                labels: monthlySales.map(item => {
+                    const [year, month] = item.month.split('-');
+                    return new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'Sales',
+                    data: monthlySales.map(item => parseFloat(item.total || 0).toFixed(2)),
+                    borderColor: '#17a2b8',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
         };
 
         res.render('admin/dashboard', {
-            title: 'Admin Dashboard',
-            totalProducts,
-            totalCategories,
+            title: 'Dashboard',
             totalOrders,
-            totalUsers,
+            totalRevenue: parseFloat(totalRevenue || 0).toFixed(2),
+            pendingOrders,
+            completedOrders,
             recentOrders: formattedRecentOrders,
-            topProducts: formattedTopProducts,
-            totalRevenue: Number(safeOrderStats.totalRevenue || 0).toFixed(2),
-            pendingOrders: safeOrderStats.pendingOrders,
-            completedOrders: safeOrderStats.completedOrders,
-            monthlySales: formattedMonthlySales
+            monthlySalesData
         });
     } catch (error) {
-        console.error('Error in admin dashboard:', error);
-        res.status(500).render('error', {
+        console.error('Error loading dashboard:', error);
+        res.status(500).render('error', { 
             title: 'Error',
             message: 'Error loading dashboard',
             error: process.env.NODE_ENV === 'development' ? error : {}
@@ -602,36 +628,30 @@ exports.deleteUser = async (req, res) => {
 // Analytics
 exports.analytics = async (req, res) => {
     try {
-        // Get date range from query params or default to last 30 days
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-
-        // Get sales data
-        const salesData = await Order.getSalesByDateRange(startDate, endDate);
-        const totalSales = await Order.calculateTotalSales(startDate, endDate);
+        // Get last 30 days stats
+        const last30DaysStats = await Order.getLast30DaysStats();
+        
+        // Get monthly sales data
         const monthlySales = await Order.getMonthlySales(6);
         const formattedMonthlySales = Order.formatMonthlySalesData(monthlySales);
-
-        // Get top products
-        const topProducts = await OrderItem.getTopProducts(5);
-        const formattedTopProducts = OrderItem.formatProductsData(topProducts);
-
+        
         // Get recent orders
         const recentOrders = await Order.getRecentOrders(5);
 
-        // Format data for display
+        // Format data for the view
         const formattedData = {
-            totalOrders: totalSales.total_orders || 0,
-            totalRevenue: (totalSales.total_revenue || 0).toFixed(2),
-            averageOrderValue: (totalSales.average_order_value || 0).toFixed(2),
+            last30Days: {
+                totalOrders: parseInt(last30DaysStats.totalOrders) || 0,
+                pendingOrders: parseInt(last30DaysStats.pendingOrders) || 0,
+                completedOrders: parseInt(last30DaysStats.completedOrders) || 0,
+                totalRevenue: parseFloat(last30DaysStats.totalRevenue) || 0
+            },
             monthlySales: formattedMonthlySales,
-            topProducts: formattedTopProducts,
             recentOrders: recentOrders.map(order => ({
                 id: order.id,
                 customer: order.customer_name || 'Guest',
                 date: new Date(order.created_at).toLocaleDateString(),
-                amount: (order.total_amount || 0).toFixed(2),
+                amount: parseFloat(order.total_amount || 0).toFixed(2),
                 status: order.status,
                 items: order.item_count || 0,
                 products: order.product_names || 'No products'
@@ -743,95 +763,6 @@ exports.convertToCSV = (data) => {
     ];
     
     return csvRows.join('\n');
-};
-
-exports.dashboard = async (req, res) => {
-    try {
-        // Get total orders
-        const totalOrders = await Order.count();
-
-        // Get total revenue
-        const totalRevenue = await Order.sum('total_amount');
-
-        // Get pending orders count
-        const pendingOrders = await Order.count({
-            where: { status: 'pending' }
-        });
-
-        // Get completed orders count
-        const completedOrders = await Order.count({
-            where: { status: 'completed' }
-        });
-
-        // Get recent orders with formatted data
-        const recentOrders = await Order.findAll({
-            limit: 5,
-            order: [['created_at', 'DESC']],
-            include: [{
-                model: User,
-                attributes: ['name']
-            }]
-        });
-
-        // Format recent orders data
-        const formattedRecentOrders = recentOrders.map(order => ({
-            id: order.id,
-            user_name: order.User ? order.User.name : 'Guest',
-            formatted_amount: parseFloat(order.total_amount).toFixed(2),
-            status: order.status,
-            formatted_date: new Date(order.created_at).toLocaleDateString()
-        }));
-
-        // Get monthly sales data
-        const monthlySales = await Order.findAll({
-            attributes: [
-                [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at')), 'month'],
-                [sequelize.fn('SUM', sequelize.col('total_amount')), 'total']
-            ],
-            group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at'))],
-            order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at')), 'ASC']]
-        });
-
-        // Format monthly sales data for chart with options
-        const monthlySalesData = {
-            type: 'line',
-            data: {
-                labels: monthlySales.map(item => new Date(item.getDataValue('month')).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })),
-                datasets: [{
-                    label: 'Sales',
-                    data: monthlySales.map(item => parseFloat(item.getDataValue('total')).toFixed(2)),
-                    borderColor: '#17a2b8',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value;
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        res.render('admin/dashboard', {
-            title: 'Dashboard',
-            totalOrders,
-            totalRevenue: parseFloat(totalRevenue || 0).toFixed(2),
-            pendingOrders,
-            completedOrders,
-            recentOrders: formattedRecentOrders,
-            monthlySalesData
-        });
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        res.status(500).render('error', { message: 'Error loading dashboard' });
-    }
 };
 
 // Get single product

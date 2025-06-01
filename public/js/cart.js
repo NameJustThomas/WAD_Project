@@ -71,6 +71,98 @@ document.addEventListener('DOMContentLoaded', function() {
     if (clearButton) {
         clearButton.addEventListener('click', clearCart);
     }
+
+    // Handle coupon application
+    const applyCouponBtn = document.querySelector('.apply-btn');
+    const couponInput = document.querySelector('.promo-code-input');
+
+    if (applyCouponBtn && couponInput) {
+        applyCouponBtn.addEventListener('click', async () => {
+            const couponCode = couponInput.value.trim();
+            if (!couponCode) {
+                showNotification('Error', 'Please enter a coupon code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/cart/apply-coupon', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ couponCode })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Success', data.message, 'success');
+                    // Update cart totals
+                    if (data.cart) {
+                        updateCartTotals(data.cart);
+                        
+                        // Update coupon input and button state
+                        couponInput.value = couponCode;
+                        couponInput.disabled = true;
+                        applyCouponBtn.disabled = true;
+                        applyCouponBtn.textContent = 'Applied';
+
+                        // Show discount section if it exists
+                        const discountSection = document.querySelector('.discount-amount')?.closest('.d-flex');
+                        if (discountSection) {
+                            discountSection.style.display = 'flex';
+                        }
+
+                        // Reload page after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                } else {
+                    showNotification('Error', data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error', 'Failed to apply coupon', 'error');
+            }
+        });
+    }
+
+    // Handle checkout button click
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch('/cart/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Checkout response:', data);
+                
+                if (data.success) {
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    }
+                } else {
+                    showNotification('Error', data.message || 'Error processing checkout', 'error');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                showNotification('Error', 'Failed to process checkout. Please try again.', 'error');
+            }
+        });
+    }
 });
 
 function showNotification(title, message, type = 'info') {
@@ -123,23 +215,68 @@ function updateQuantity(productId, quantity) {
 }
 
 function updateCartTotals(cart) {
-    // Update subtotal
-    const subtotalElement = document.querySelector('.subtotal-amount');
-    if (subtotalElement) {
-        subtotalElement.textContent = `$${cart.subtotal.toFixed(2)}`;
-    }
+    try {
+        console.log('Updating cart totals with data:', cart);
+        
+        // Update subtotal
+        const subtotalElement = document.querySelector('.subtotal-amount');
+        if (subtotalElement) {
+            const subtotal = parseFloat(cart.subtotal);
+            if (!isNaN(subtotal)) {
+                subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+            } else {
+                console.error('Invalid subtotal value:', cart.subtotal);
+            }
+        }
 
-    // Update total
-    const totalElement = document.querySelector('.total-amount');
-    if (totalElement) {
-        totalElement.textContent = `$${cart.total.toFixed(2)}`;
-    }
+        // Update shipping
+        const shippingElement = document.querySelector('.shipping-amount');
+        if (shippingElement) {
+            const shipping = parseFloat(cart.shipping);
+            if (!isNaN(shipping)) {
+                shippingElement.textContent = `$${shipping.toFixed(2)}`;
+            } else {
+                console.error('Invalid shipping value:', cart.shipping);
+            }
+        }
 
-    // Update cart count in navbar
-    const cartCountElements = document.querySelectorAll('.cart-count-badge');
-    cartCountElements.forEach(element => {
-        element.textContent = cart.totalItems;
-    });
+        // Update discount if exists
+        const discountElement = document.querySelector('.discount-amount');
+        if (discountElement && cart.discount) {
+            const discount = parseFloat(cart.discount);
+            if (!isNaN(discount)) {
+                discountElement.textContent = `-$${discount.toFixed(2)}`;
+                const discountSection = discountElement.closest('.d-flex');
+                if (discountSection) {
+                    discountSection.style.display = 'flex';
+                }
+            } else {
+                console.error('Invalid discount value:', cart.discount);
+            }
+        }
+
+        // Update total
+        const totalElement = document.querySelector('.total-amount');
+        if (totalElement) {
+            const total = parseFloat(cart.total);
+            if (!isNaN(total)) {
+                totalElement.textContent = `$${total.toFixed(2)}`;
+            } else {
+                console.error('Invalid total value:', cart.total);
+            }
+        }
+
+        // Update cart count in navbar
+        const cartCountElements = document.querySelectorAll('.cart-count-badge');
+        if (cart.totalItems !== undefined) {
+            cartCountElements.forEach(element => {
+                element.textContent = cart.totalItems;
+            });
+        }
+    } catch (error) {
+        console.error('Error updating cart totals:', error);
+        showNotification('Error', 'Failed to update cart totals', 'error');
+    }
 }
 
 function removeItem(productId) {

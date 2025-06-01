@@ -46,6 +46,24 @@
             <form id="checkout-form" action="/checkout/process" method="POST" novalidate>
               <h5 class="fw-bold mb-4">Shipping Information</h5>
 
+              <% if (addresses && addresses.length > 0) { %>
+                <div class="mb-4">
+                  <label class="form-label">Select Shipping Address</label>
+                  <select class="form-select" name="addressId" required>
+                    <option value="">Choose a saved address</option>
+                    <% addresses.forEach(address => { %>
+                      <option value="<%= address.id %>">
+                        <%= address.first_name %> <%= address.last_name %> - <%= address.address %>, <%= address.city %>, <%= address.state %> <%= address.zip_code %>
+                      </option>
+                    <% }); %>
+                  </select>
+                </div>
+              <% } %>
+
+              <div class="mb-4">
+                <h6 class="fw-bold">Or enter a new address:</h6>
+              </div>
+
               <div class="row g-3 mb-3">
                 <div class="col-md-6">
                   <label for="firstName" class="form-label">First Name</label>
@@ -125,6 +143,15 @@
               </div>
 
               <h5 class="fw-bold mb-4">Payment Information</h5>
+
+              <div class="mb-3">
+                <label class="form-label">Payment Method</label>
+                <select class="form-select" name="paymentMethod" required>
+                  <option value="">Select payment method</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+              </div>
 
               <div class="mb-3">
                 <label for="cardName" class="form-label">Name on Card</label>

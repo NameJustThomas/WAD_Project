@@ -134,6 +134,13 @@
               <span class="shipping-amount">$<%= shipping %></span>
             </div>
 
+            <% if (coupon) { %>
+            <div class="d-flex justify-content-between mb-2 text-success">
+              <span>Discount (<%= coupon.code %>):</span>
+              <span class="discount-amount">-$<%= coupon.discount.toFixed(2) %></span>
+            </div>
+            <% } %>
+
             <hr />
 
             <div class="d-flex justify-content-between mb-3">
@@ -157,29 +164,27 @@
                 <input
                   type="text"
                   class="form-control border-0 bg-transparent shadow-none promo-code-input"
-                  placeholder="Add promo code"
+                  placeholder="<%= coupon ? 'Coupon applied: ' + coupon.code : 'Add promo code' %>"
                   style="flex-grow: 1"
+                  <%= coupon ? 'disabled' : '' %>
                 />
               </div>
 
-              <!-- Apply Button with fixed width -->
+              <!-- Apply Button -->
               <button
                 class="btn btn-dark text-white rounded-pill px-4 py-2 apply-btn"
                 type="button"
                 style="white-space: nowrap; flex-shrink: 0; width: 120px"
+                <%= coupon ? 'disabled' : '' %>
               >
-                Apply
+                <%= coupon ? 'Applied' : 'Apply' %>
               </button>
             </div>
 
             <!-- Checkout Button -->
-            <button
-              onclick="window.location.href='/checkout'"
-              class="btn btn-dark w-100 text-white fw-semibold d-flex justify-content-center align-items-center gap-2 checkout-btn"
-              style="margin-top: 20px;"
-            >
-              Go to Checkout
-              <i class="fas fa-arrow-right"></i>
+            <button class="btn btn-dark w-100 text-white fw-semibold d-flex justify-content-center align-items-center gap-2 checkout-btn">
+                Go to Checkout
+                <i class="fas fa-arrow-right"></i>
             </button>
           </div>
         </div>

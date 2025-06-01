@@ -11,7 +11,7 @@ exports.showProfile = async (req, res) => {
 
   try {
     // Fetch user and profile info from DB
-    const [userRows] = await db.query('SELECT id, username, email FROM users WHERE id = ?', [userId]);
+    const [userRows] = await db.query('SELECT id, username, email, role FROM users WHERE id = ?', [userId]);
     if (userRows.length === 0) {
       req.flash('error', 'User not found');
       return res.redirect('/login');
@@ -52,7 +52,7 @@ exports.showEditProfile = async (req, res) => {
     const [profileRows] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
     const profile = profileRows[0] || {};
 
-    res.render('editProfile', {
+    res.render('user/profile', {
       title: 'Edit Profile',
       user,
       profile,
@@ -79,12 +79,11 @@ exports.updateProfile = async (req, res) => {
   if (!firstName || firstName.trim() === '') errors.push('First Name is required');
   if (!lastName || lastName.trim() === '') errors.push('Last Name is required');
   if (!email || email.trim() === '') errors.push('Email is required');
-  // You could add email format validation here
 
   if (errors.length > 0) {
-    return res.render('editProfile', {
+    return res.render('user/profile', {
       title: 'Edit Profile',
-      user: { id: userId, email },   // only keep fields that matter here
+      user: { id: userId, email },
       profile: { first_name: firstName, last_name: lastName, address, city, state, zip_code: zipCode },
       errors,
       messages: req.flash()
@@ -92,36 +91,51 @@ exports.updateProfile = async (req, res) => {
   }
 
   try {
-    // Update email in users table (optional: check email uniqueness)
+    // Get existing profile data
+    const [existingProfile] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
+    const currentProfile = existingProfile[0] || {};
+
+    // Update email in users table
     await db.query('UPDATE users SET email = ? WHERE id = ?', [email, userId]);
 
-    // Check if profile exists
-    const [existingProfile] = await db.query('SELECT id FROM profiles WHERE user_id = ?', [userId]);
-
     if (existingProfile.length > 0) {
-      // Update profile
+      // Update profile with new data, preserving existing data if not provided
       await db.query(
-        `UPDATE profiles SET first_name = ?, last_name = ?, address = ?, city = ?, state = ?, zip_code = ?
+        `UPDATE profiles SET 
+          first_name = ?, 
+          last_name = ?, 
+          address = IF(? IS NULL OR ? = '', address, ?), 
+          city = IF(? IS NULL OR ? = '', city, ?), 
+          state = IF(? IS NULL OR ? = '', state, ?), 
+          zip_code = IF(? IS NULL OR ? = '', zip_code, ?)
          WHERE user_id = ?`,
-        [firstName, lastName, address, city, state, zipCode, userId]
+        [
+          firstName,
+          lastName,
+          address, address, address,
+          city, city, city,
+          state, state, state,
+          zipCode, zipCode, zipCode,
+          userId
+        ]
       );
     } else {
-      // Insert new profile
+      // Insert new profile with provided data
       await db.query(
         `INSERT INTO profiles (user_id, first_name, last_name, address, city, state, zip_code)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, firstName, lastName, address, city, state, zipCode]
+        [userId, firstName, lastName, address || null, city || null, state || null, zipCode || null]
       );
     }
 
-    // Optionally update session user email here if you want immediate effect
+    // Update session user email
     req.session.user.email = email;
 
     req.flash('success', 'Profile updated successfully.');
     res.redirect('/profile');
   } catch (err) {
-    console.error(err);
-    res.status(500).render('editProfile', {
+    console.error('Error updating profile:', err);
+    res.status(500).render('user/profile', {
       title: 'Edit Profile',
       user: { id: userId, email },
       profile: { first_name: firstName, last_name: lastName, address, city, state, zip_code: zipCode },

@@ -34,29 +34,41 @@
 
           <!-- Summary Cards -->
           <div class="row mb-4">
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-body">
-                  <h5>Total Orders</h5>
-                  <h3><%= data?.totalOrders || 0 %></h3>
-                  <p class="text-muted">Last 30 days</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="card">
                 <div class="card-body">
                   <h5>Total Revenue</h5>
-                  <h3>$<%= data?.totalRevenue?.toFixed(2) || '0.00' %></h3>
+                  <h3>$<%= data.last30Days.totalRevenue.toFixed(2) %></h3>
                   <p class="text-muted">Last 30 days</p>
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
+
+            <div class="col-md-3">
               <div class="card">
                 <div class="card-body">
-                  <h5>Average Order Value</h5>
-                  <h3>$<%= data?.averageOrderValue?.toFixed(2) || '0.00' %></h3>
+                  <h5>Total Orders</h5>
+                  <h3><%= data.last30Days.totalOrders %></h3>
+                  <p class="text-muted">Last 30 days</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <h5>Pending Orders</h5>
+                  <h3><%= data.last30Days.pendingOrders %></h3>
+                  <p class="text-muted">Last 30 days</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <h5>Completed Orders</h5>
+                  <h3><%= data.last30Days.completedOrders %></h3>
                   <p class="text-muted">Last 30 days</p>
                 </div>
               </div>

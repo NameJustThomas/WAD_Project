@@ -28,4 +28,7 @@ router.delete('/clear', cartController.clearCart);
 // Checkout - yêu cầu auth
 router.post('/checkout', auth, cartController.checkout);
 
+// Apply coupon
+router.post('/apply-coupon', cartController.applyCoupon);
+
 module.exports = router;

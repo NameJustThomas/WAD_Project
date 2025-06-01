@@ -17,6 +17,7 @@ const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 const { validationResult } = require('express-validator');
 const Cart = require('../models/Cart');
+const pool = require('../config/database');
 
 // Constants
 const SHIPPING_COST = 10;
@@ -56,20 +57,24 @@ exports.getCheckout = async (req, res) => {
         const addresses = await Address.findByUserId(userId);
         const profile = await Profile.findByUserId(userId);
 
-        // Lấy giỏ hàng từ session
-        const cart = req.session.cart || [];
+        // Get cart items from session
+        const cartItems = req.session.cart || [];
         
-        // Tính toán tổng tiền
-        let total = 0;
-        for (const item of cart) {
-            total += item.price * item.quantity;
+        // Calculate totals
+        let subtotal = 0;
+        for (const item of cartItems) {
+            subtotal += item.price * item.quantity;
         }
+        const shipping = SHIPPING_COST;
+        const total = subtotal + shipping;
 
         res.render('shop/checkout', {
             title: 'Checkout',
             user: user,
             profile: profile,
-            cart: cart,
+            cartItems: cartItems,
+            subtotal: subtotal,
+            shipping: shipping,
             total: total,
             addresses: addresses
         });
@@ -82,94 +87,142 @@ exports.getCheckout = async (req, res) => {
 
 // Process checkout
 exports.processCheckout = async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
+
         const userId = req.user.id;
-        const { addressId, paymentMethod, firstName, lastName, phone } = req.body;
-        
-        // Get cart items from database for logged-in users
-        const cartItems = await Cart.getCartItems(userId);
-        
-        // Validate cart
-        if (!cartItems.length) {
-            req.flash('error', 'Giỏ hàng trống');
-            return res.redirect('/cart');
-        }
+        const { 
+            address_id,
+            payment_method,
+            first_name,
+            last_name,
+            email,
+            address,
+            city,
+            state,
+            zip_code
+        } = req.body;
 
         // Validate required fields
-        if (!addressId || !paymentMethod) {
-            req.flash('error', 'Vui lòng chọn địa chỉ giao hàng và phương thức thanh toán');
-            return res.redirect('/checkout');
-        }
-
-        // Validate address exists
-        const address = await Address.findById(addressId);
-        if (!address || address.userId !== userId) {
-            req.flash('error', 'Địa chỉ giao hàng không hợp lệ');
-            return res.redirect('/checkout');
-        }
-
-        // Check and update profile if needed
-        let profile = await Profile.findByUserId(userId);
-        if (!profile) {
-            // Validate profile data
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                req.flash('error', errors.array()[0].msg);
-                return res.redirect('/checkout');
-            }
-
-            // Create new profile
-            await Profile.create({
-                userId,
-                firstName,
-                lastName,
-                phone
+        if (!payment_method) {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment method is required'
             });
         }
 
-        // Calculate order total
+        // Get shipping address
+        let shippingAddress;
+        if (address_id) {
+            // Use existing address
+            const [addresses] = await connection.query(
+                'SELECT * FROM addresses WHERE id = ? AND user_id = ?',
+                [address_id, userId]
+            );
+            if (!addresses.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid address selected'
+                });
+            }
+            shippingAddress = addresses[0];
+        } else {
+            // Validate new address fields
+            if (!first_name || !last_name || !email || !address || !city || !state || !zip_code) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'All address fields are required'
+                });
+            }
+
+            // Create new address
+            const [result] = await connection.query(
+                `INSERT INTO addresses (
+                    user_id, first_name, last_name, email, 
+                    address, city, state, zip_code
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [userId, first_name, last_name, email, address, city, state, zip_code]
+            );
+            shippingAddress = {
+                id: result.insertId,
+                first_name,
+                last_name,
+                email,
+                address,
+                city,
+                state,
+                zip_code
+            };
+        }
+
+        // Format shipping address
+        const formattedAddress = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip_code}`;
+
+        // Get cart items and calculate total
+        const cartItems = await Cart.getCartItems(userId);
         const subtotal = await Cart.getCartTotal(userId);
-        const shippingCost = 10; // Fixed shipping cost
-        const totalAmount = subtotal + shippingCost;
+        const shipping = 10; // Fixed shipping cost
+        let total = subtotal + shipping;
 
-        // Create order with transaction
-        try {
-            const order = await Order.create({
-                userId: userId,
-                addressId: addressId,
-                status: 'pending',
-                paymentMethod: paymentMethod,
-                totalAmount: totalAmount,
-                items: cartItems.map(item => ({
-                    productId: item.product_id,
-                    quantity: item.quantity,
-                    price: item.final_price || item.price
-                }))
-            });
-
-            // Clear cart after successful order
-            try {
-                // Clear database cart
-                await Cart.clearCart(userId);
-                // Clear session cart
-                req.session.cart = [];
-                console.log(`Cart cleared for user ${userId} after successful order ${order.id}`);
-            } catch (cartError) {
-                console.error('Error clearing cart:', cartError);
-                // Continue with order success even if cart clearing fails
-            }
-
-            // Set success message with order details
-            req.flash('success', `Đặt hàng thành công! Mã đơn hàng: #${order.id}`);
-            res.redirect(`/account/orders/${order.id}`);
-        } catch (error) {
-            console.error('Error creating order:', error);
-            req.flash('error', 'Có lỗi xảy ra khi tạo đơn hàng: ' + error.message);
-            res.redirect('/checkout');
+        // Apply coupon discount if exists
+        if (req.session.coupon) {
+            const discount = req.session.coupon.discount_type === 'percent' 
+                ? (subtotal * req.session.coupon.discount_value / 100)
+                : req.session.coupon.discount_value;
+            total -= Math.min(discount, subtotal);
         }
+
+        // Create order
+        const [orderResult] = await connection.query(
+            `INSERT INTO orders (
+                user_id,
+                total_amount,
+                shipping_address,
+                payment_method,
+                status
+            ) VALUES (?, ?, ?, ?, ?)`,
+            [userId, total, formattedAddress, payment_method, 'pending']
+        );
+
+        const orderId = orderResult.insertId;
+
+        // Add order items
+        for (const item of cartItems) {
+            await connection.query(
+                `INSERT INTO order_items (
+                    order_id, product_id, quantity, price
+                ) VALUES (?, ?, ?, ?)`,
+                [orderId, item.product_id, item.quantity, item.price]
+            );
+
+            // Update product stock
+            await connection.query(
+                'UPDATE products SET stock = stock - ? WHERE id = ?',
+                [item.quantity, item.product_id]
+            );
+        }
+
+        // Clear cart
+        await Cart.clearCart(userId);
+        req.session.cart = [];
+        req.session.coupon = null;
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: 'Order placed successfully',
+            orderId
+        });
     } catch (error) {
+        await connection.rollback();
         console.error('Error in processCheckout:', error);
-        req.flash('error', 'Có lỗi xảy ra khi xử lý đơn hàng');
-        res.redirect('/checkout');
+        res.status(500).json({
+            success: false,
+            message: 'Error processing checkout'
+        });
+    } finally {
+        connection.release();
     }
 }; 
