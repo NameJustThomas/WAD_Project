@@ -74,7 +74,9 @@ const categoriesRouter = require('./routes/categories');
 const cartRouter = require('./routes/cart');
 const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
-const couponRouter = require('./routes/coupons'); // ✅ Added
+const couponRouter = require('./routes/coupons');
+const checkoutRoutes = require('./routes/checkout');
+const profileRouter = require('./routes/profile'); // ✅ Added profile route
 
 // Use routes
 app.use('/', homeRouter);
@@ -83,7 +85,9 @@ app.use('/categories', categoriesRouter);
 app.use('/cart', cartRouter);
 app.use('/admin', adminRouter);
 app.use('/', authRouter);
-app.use('/', couponRouter); // ✅ Registered coupon routes
+app.use('/', couponRouter);
+app.use('/checkout', checkoutRoutes);
+app.use('/profile', profileRouter); // ✅ Register profile route
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,0 +1,170 @@
+<!-- views/profile.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile - Online Shop</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <div class="container py-5 font-jack-frost">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 font-jack-frost">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Profile</li>
+        </ol>
+      </nav>
+      <h2 class="checkout-title">My Profile</h2>
+    </div>
+
+    <% if (messages.error) { %>
+      <div class="alert alert-danger"><%= messages.error.join('<br>') %></div>
+    <% } %>
+    <% if (messages.success) { %>
+      <div class="alert alert-success"><%= messages.success.join('<br>') %></div>
+    <% } %>
+
+    <div class="row g-4">
+      <!-- Profile Info -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm rounded">
+          <div class="card-body p-4 position-relative">
+            <button
+              type="button"
+              id="editBtn"
+              class="btn btn-outline-secondary position-absolute top-0 end-0 m-3"
+            >
+              <i class="fas fa-edit"></i> Edit
+            </button>
+
+            <form id="profileForm" action="/profile/update" method="POST" novalidate>
+              <h5 class="fw-bold mb-4">Personal Information</h5>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="username" class="form-label">Username</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="username"
+                    name="username"
+                    value="<%= user.username %>"
+                    readonly
+                    required
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="email" class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    name="email"
+                    value="<%= user.email %>"
+                    readonly
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="address"
+                  name="address"
+                  value="<%= profile.address || '' %>"
+                  readonly
+                />
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label for="city" class="form-label">City</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="city"
+                    name="city"
+                    value="<%= profile.city || '' %>"
+                    readonly
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label for="state" class="form-label">State</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="state"
+                    name="state"
+                    value="<%= profile.state || '' %>"
+                    readonly
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label for="zipCode" class="form-label">Zip Code</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="zipCode"
+                    name="zipCode"
+                    value="<%= profile.zip_code || '' %>"
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                id="updateBtn"
+                class="btn btn-dark w-100 fw-semibold d-none"
+              >
+                Update Profile
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar / Account Summary -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm rounded p-4">
+          <h5 class="fw-bold mb-3">Account Summary</h5>
+          <p><strong>Member Since:</strong> 
+            <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A' %>
+          </p>
+          <p><strong>Total Orders:</strong> <%= user.totalOrders || 0 %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById("editBtn").addEventListener("click", () => {
+      const form = document.getElementById("profileForm");
+      const inputs = form.querySelectorAll("input");
+      const updateBtn = document.getElementById("updateBtn");
+
+      inputs.forEach(input => input.removeAttribute("readonly"));
+      updateBtn.classList.remove("d-none");
+      document.getElementById("editBtn").disabled = true;
+    });
+  </script>
+</body>
+</html>

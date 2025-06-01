@@ -195,28 +195,26 @@ exports.clearCart = async (req, res) => {
     }
 };
 
-// Checkout
 exports.checkout = async (req, res) => {
     try {
         const userId = req.user ? req.user.id : null;
         const sessionCart = req.session.cart || [];
 
         if (!userId) {
-            // Store checkout intent in session
             req.session.checkoutIntent = true;
             return res.json({
+                success: true,
                 redirect: '/auth/login'
             });
         }
 
-        // Merge session cart with database cart if needed
         if (sessionCart.length > 0) {
             await Cart.mergeSessionCart(userId, sessionCart);
             req.session.cart = [];
         }
 
-        // Redirect to checkout page
         res.json({
+            success: true,
             redirect: '/checkout'
         });
     } catch (error) {
@@ -224,5 +222,6 @@ exports.checkout = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error processing checkout' });
     }
 };
+
 
 module.exports = exports; 

@@ -876,3 +876,86 @@ input[type="number"]::-webkit-outer-spin-button {
   background-color: #e9ecef;
   border-radius: 0.375rem;
 }
+
+/* checkout.css */
+
+/* General container padding and font */
+.container.py-5 {
+  font-family: 'Jack Frost', cursive, Arial, sans-serif; /* same as cart page */
+  color: #333;
+}
+
+/* Headings */
+h2, h4 {
+  font-weight: 700;
+  color: #222;
+}
+
+/* Card Styles */
+.card {
+  border-radius: 0.75rem;
+  box-shadow: 0 0.125rem 0.25rem rgb(0 0 0 / 0.075);
+}
+
+/* Form labels */
+.form-label {
+  font-weight: 600;
+  color: #444;
+}
+
+/* Inputs */
+input.form-control {
+  border-radius: 0.4rem;
+  border: 1px solid #ced4da;
+  transition: border-color 0.3s ease;
+}
+
+input.form-control:focus {
+  border-color: #495057;
+  box-shadow: 0 0 5px rgba(73, 80, 87, 0.25);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #212529;
+  border-color: #212529;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #343a40;
+  border-color: #343a40;
+}
+
+/* Order Summary */
+.card-body h4.card-title {
+  font-weight: 700;
+  color: #212529;
+}
+
+.d-flex.justify-content-between > span {
+  font-weight: 500;
+  color: #444;
+}
+
+.d-flex.justify-content-between > strong {
+  color: #000;
+  font-size: 1.1rem;
+}
+
+/* Responsive fix for smaller screens */
+@media (max-width: 767.98px) {
+  .col-md-8, .col-md-4 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* Input formatting styles (optional, if needed for placeholders) */
+input::placeholder {
+  color: #999;
+  font-style: italic;
+}

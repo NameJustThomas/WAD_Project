@@ -230,3 +230,18 @@ INSERT INTO feedbacks (name, rating, content) VALUES
 ('Hanh Bui', 2, 'Product arrived damaged. Awaiting support response.'),
 ('Trung Tuan', 5, 'Top-notch service and product. Will refer friends.'),
 ('Kim Chi', 4, 'Good deal for the price. Smooth transaction.');
+
+CREATE TABLE IF NOT EXISTS profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip_code VARCHAR(20),
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
