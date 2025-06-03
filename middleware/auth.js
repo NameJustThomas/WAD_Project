@@ -26,7 +26,7 @@ const isAuthenticated = async (req, res, next) => {
         if (!req.session || !req.session.user_id) {
             // Store the intended destination
             req.session.returnTo = req.originalUrl;
-            return res.redirect('/auth/login');
+            return res.redirect('/login');
         }
 
         // Get user from database
@@ -38,7 +38,7 @@ const isAuthenticated = async (req, res, next) => {
         if (!users.length) {
             // Clear invalid session
             req.session.destroy();
-            return res.redirect('/auth/login');
+            return res.redirect('/login');
         }
 
         // Set user in request object
@@ -113,7 +113,7 @@ const auth = async (req, res, next) => {
         if (!req.session || !req.session.user_id) {
             // Store the intended destination
             req.session.returnTo = req.originalUrl;
-            return res.redirect('/auth/login');
+            return res.redirect('/login');
         }
 
         // Get user from database
@@ -125,7 +125,7 @@ const auth = async (req, res, next) => {
         if (!users.length) {
             // Clear invalid session
             req.session.destroy();
-            return res.redirect('/auth/login');
+            return res.redirect('/login');
         }
 
         // Set user in request object

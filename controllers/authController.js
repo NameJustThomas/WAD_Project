@@ -95,7 +95,7 @@ exports.showRegister = (req, res) => {
 // Handle registration
 exports.register = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, confirm_password } = req.body;
 
         // Validate input
         const errors = validationResult(req);
@@ -104,10 +104,23 @@ exports.register = async (req, res) => {
             return res.redirect('/register');
         }
 
-        // Check if user exists
-        const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (existingUsers.length) {
-            req.flash('error', 'This email is already registered');
+        // Check if passwords match
+        if (password !== confirm_password) {
+            req.flash('error', 'Passwords do not match');
+            return res.redirect('/register');
+        }
+
+        // Check if username exists
+        const [existingUsernames] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        if (existingUsernames.length) {
+            req.flash('error', 'Username is already taken');
+            return res.redirect('/register');
+        }
+
+        // Check if email exists
+        const [existingEmails] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (existingEmails.length) {
+            req.flash('error', 'Email is already registered');
             return res.redirect('/register');
         }
 
@@ -121,6 +134,16 @@ exports.register = async (req, res) => {
             [username, email, hashedPassword, 'user']
         );
 
+        if (!result.insertId) {
+            throw new Error('Failed to create user');
+        }
+
+        // Create profile for user
+        await pool.query(
+            'INSERT INTO profiles (user_id) VALUES (?)',
+            [result.insertId]
+        );
+
         // Set session
         req.session.user_id = result.insertId;
         req.session.user = {
@@ -129,7 +152,9 @@ exports.register = async (req, res) => {
             email,
             role: 'user'
         };
+        res.locals.user = req.session.user;
 
+        req.flash('success', 'Registration successful! Welcome to our shop.');
         res.redirect('/');
     } catch (error) {
         console.error('Error in register:', error);

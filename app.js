@@ -88,7 +88,7 @@ app.use('/admin', adminRouter);
 app.use('/', authRouter);
 app.use('/', couponRouter);
 app.use('/checkout', checkoutRoutes);
-app.use('/profile', profileRouter);
+app.use('/account/profile', profileRouter);
 app.use('/account/orders', ordersRouter);
 
 // Error handling middleware

@@ -31,4 +31,22 @@ router.post('/checkout', cartController.checkout);
 // Apply coupon
 router.post('/apply-coupon', cartController.applyCoupon);
 
+// Proceed to checkout
+router.get('/checkout', (req, res) => {
+    // Kiểm tra giỏ hàng
+    if (!req.session.cart || req.session.cart.length === 0) {
+        req.flash('error', 'Your cart is empty');
+        return res.redirect('/cart');
+    }
+
+    // Nếu chưa đăng nhập, chuyển hướng đến trang login
+    if (!req.user) {
+        req.session.returnTo = '/checkout';
+        return res.redirect('/login');
+    }
+
+    // Nếu đã đăng nhập, chuyển đến trang checkout
+    res.redirect('/checkout');
+});
+
 module.exports = router;

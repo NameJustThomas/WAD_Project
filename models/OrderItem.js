@@ -12,8 +12,13 @@ const pool = require('../config/database');
 
 class OrderItem {
     static async create(orderId, productId, quantity, price) {
-        const [result] = await pool.execute(
-            'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+        const [result] = await pool.query(
+            `INSERT INTO order_items (
+                order_id,
+                product_id,
+                quantity,
+                price
+            ) VALUES (?, ?, ?, ?)`,
             [orderId, productId, quantity, price]
         );
         return result.insertId;
@@ -25,8 +30,24 @@ class OrderItem {
             FROM order_items oi
             LEFT JOIN products p ON oi.product_id = p.id
             WHERE oi.order_id = ?
-        `, [parseInt(orderId)]);
+        `, [orderId]);
         return items;
+    }
+
+    static async findByProductId(productId) {
+        const [items] = await pool.query(
+            'SELECT * FROM order_items WHERE product_id = ?',
+            [productId]
+        );
+        return items;
+    }
+
+    static async deleteByOrderId(orderId) {
+        const [result] = await pool.query(
+            'DELETE FROM order_items WHERE order_id = ?',
+            [orderId]
+        );
+        return result.affectedRows > 0;
     }
 
     static async getTopSellingProducts(limit = 5) {

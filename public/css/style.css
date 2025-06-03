@@ -545,9 +545,9 @@ input[type="number"]::-webkit-outer-spin-button {
   .large-box {
     width: 300px;
     height: 400px;
-  }
-  
-  .category-title {
+}
+
+.category-title {
     font-size: 1.2rem;
   }
 }

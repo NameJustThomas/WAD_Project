@@ -21,7 +21,33 @@ router.post('/login', guest, authController.login);
 
 // Register routes
 router.get('/register', guest, authController.showRegister);
-router.post('/register', guest, authController.register);
+router.post('/register', guest, [
+    check('username')
+        .trim()
+        .isLength({ min: 3, max: 50 })
+        .withMessage('Username must be between 3 and 50 characters')
+        .matches(/^[a-zA-Z0-9_]+$/)
+        .withMessage('Username can only contain letters, numbers and underscores'),
+    check('email')
+        .trim()
+        .isEmail()
+        .withMessage('Please enter a valid email')
+        .normalizeEmail(),
+    check('password')
+        .isLength({ min: 6 })
+        .withMessage('Password must be at least 6 characters long')
+        .matches(/\d/)
+        .withMessage('Password must contain at least one number')
+        .matches(/[a-zA-Z]/)
+        .withMessage('Password must contain at least one letter'),
+    check('confirm_password')
+        .custom((value, { req }) => {
+            if (value !== req.body.password) {
+                throw new Error('Passwords do not match');
+            }
+            return true;
+        })
+], authController.register);
 
 // Logout route
 router.get('/logout', authController.logout);

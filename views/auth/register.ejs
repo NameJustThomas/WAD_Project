@@ -51,6 +51,8 @@
                       id="username"
                       name="username"
                       required
+                      minlength="3"
+                      maxlength="50"
                     />
                   </div>
                   <div class="mb-3">
@@ -71,6 +73,18 @@
                       id="password"
                       name="password"
                       required
+                      minlength="6"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                    <input
+                      type="password"
+                      class="form-control font-segoe-ui"
+                      id="confirm_password"
+                      name="confirm_password"
+                      required
+                      minlength="6"
                     />
                   </div>
                   <div class="d-grid">

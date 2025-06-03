@@ -1139,3 +1139,45 @@ exports.getUserDetails = async (req, res) => {
         });
     }
 };
+
+// Get order items
+exports.getOrderItems = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const orderId = parseInt(id);
+
+        // Validate order ID
+        if (isNaN(orderId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid order ID'
+            });
+        }
+
+        // Get order items
+        const [items] = await pool.query(`
+            SELECT 
+                oi.*,
+                p.name as product_name,
+                p.image_url as product_image
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        `, [orderId]);
+
+        // Format items data
+        const formattedItems = items.map(item => ({
+            ...item,
+            formatted_price: parseFloat(item.price || 0).toFixed(2),
+            formatted_total: (parseFloat(item.price || 0) * item.quantity).toFixed(2)
+        }));
+
+        res.json(formattedItems);
+    } catch (error) {
+        console.error('Error in getOrderItems:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error loading order items'
+        });
+    }
+};
