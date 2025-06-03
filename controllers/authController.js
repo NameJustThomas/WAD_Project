@@ -234,7 +234,7 @@ exports.forgotPassword = async (req, res) => {
 
 // Show reset password page
 exports.showResetPassword = (req, res) => {
-    res.render('auth/reset-password', {
+    res.render('/reset-password', {
         title: 'Reset Password',
         token: req.params.token,
         error: req.flash('error'),
