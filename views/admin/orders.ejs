@@ -88,25 +88,27 @@
   </div>
 
   <!-- Order Items Modal -->
-  <div class="modal fade" id="orderItemsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="orderItemsModal" tabindex="-1" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Order Items</h5>
+          <h5 class="modal-title" id="orderItemsModalLabel">Order Items</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table align-middle">
+            <table class="table">
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Quantity</th>
                   <th>Price</th>
+                  <th>Quantity</th>
                   <th>Total</th>
                 </tr>
               </thead>
-              <tbody id="orderItemsBody"></tbody>
+              <tbody id="orderItemsList">
+                <!-- Items will be loaded here -->
+              </tbody>
             </table>
           </div>
         </div>
@@ -138,8 +140,8 @@
           if (response.ok) {
             const result = await response.json();
             if (result.success) {
-              alert('Order status updated successfully');
-              this.dataset.originalValue = newStatus;
+            alert('Order status updated successfully');
+            this.dataset.originalValue = newStatus;
             } else {
               throw new Error(result.message || 'Failed to update order status');
             }
@@ -154,34 +156,46 @@
       });
     });
 
-    // Handle view items modal
-    document.querySelectorAll('.view-items').forEach(button => {
-      button.addEventListener('click', async function () {
-        const orderId = this.dataset.orderId;
-
-        try {
-          const response = await fetch(`/admin/orders/${orderId}/items`);
-          if (!response.ok) throw new Error('Failed to load order items');
-          const items = await response.json();
-
-          const itemsHtml = items
-            .map(
-              item => `
+    document.addEventListener('DOMContentLoaded', function() {
+      // Handle view items button click
+      const viewItemsButtons = document.querySelectorAll('.view-items');
+      viewItemsButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+          const orderId = this.dataset.orderId;
+          try {
+            const response = await fetch(`/admin/orders/${orderId}/items`);
+            if (!response.ok) {
+              throw new Error('Failed to fetch order items');
+            }
+            const items = await response.json();
+            
+            // Update modal title
+            document.getElementById('orderItemsModalLabel').textContent = `Order Items #${orderId}`;
+            
+            // Clear and populate items list
+            const itemsList = document.getElementById('orderItemsList');
+            itemsList.innerHTML = items.map(item => `
               <tr>
-                <td>${item.product_name || 'N/A'}</td>
-                <td>${item.quantity || 0}</td>
-                <td>$${item.formatted_price || '0.00'}</td>
-                <td>$${item.formatted_total || '0.00'}</td>
-              </tr>`
-            )
-            .join('');
-
-          document.getElementById('orderItemsBody').innerHTML = itemsHtml;
-          new bootstrap.Modal(document.getElementById('orderItemsModal')).show();
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error loading order items');
-        }
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img src="${item.product_image}" alt="${item.product_name}" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                    <span>${item.product_name}</span>
+                  </div>
+                </td>
+                <td>$${item.formatted_price}</td>
+                <td>${item.quantity}</td>
+                <td>$${item.formatted_total}</td>
+              </tr>
+            `).join('');
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('orderItemsModal'));
+            modal.show();
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to load order items');
+          }
+        });
       });
     });
   </script>

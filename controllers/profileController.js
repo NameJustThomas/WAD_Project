@@ -21,7 +21,7 @@ exports.showProfile = async (req, res) => {
     const [profileRows] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
     const profile = profileRows[0] || {};
 
-    res.render('user/profile', {
+    res.render('account/profile', {
       title: 'My Profile',
       user,
       profile,
@@ -52,7 +52,7 @@ exports.showEditProfile = async (req, res) => {
     const [profileRows] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
     const profile = profileRows[0] || {};
 
-    res.render('user/profile', {
+    res.render('account/profile', {
       title: 'Edit Profile',
       user,
       profile,
@@ -81,7 +81,7 @@ exports.updateProfile = async (req, res) => {
   if (!email || email.trim() === '') errors.push('Email is required');
 
   if (errors.length > 0) {
-    return res.render('user/profile', {
+    return res.render('account/profile', {
       title: 'Edit Profile',
       user: { id: userId, email },
       profile: { first_name: firstName, last_name: lastName, address, city, state, zip_code: zipCode },
@@ -132,10 +132,10 @@ exports.updateProfile = async (req, res) => {
     req.session.user.email = email;
 
     req.flash('success', 'Profile updated successfully.');
-    res.redirect('/profile');
+    res.redirect('/account/profile');
   } catch (err) {
     console.error('Error updating profile:', err);
-    res.status(500).render('user/profile', {
+    res.status(500).render('account/profile', {
       title: 'Edit Profile',
       user: { id: userId, email },
       profile: { first_name: firstName, last_name: lastName, address, city, state, zip_code: zipCode },

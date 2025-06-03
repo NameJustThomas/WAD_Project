@@ -57,6 +57,15 @@ exports.getCheckout = async (req, res) => {
         const addresses = await Address.findByUserId(userId);
         const profile = await Profile.findByUserId(userId);
 
+        // Get cart items from session
+        const sessionCart = req.session.cart || [];
+        console.log('Session cart in checkout:', sessionCart);
+
+        if (!sessionCart || sessionCart.length === 0) {
+            req.flash('error', 'Your cart is empty');
+            return res.redirect('/cart');
+        }
+
         // Format addresses for the template
         const savedAddresses = addresses.map(address => ({
             id: address.id,
@@ -68,28 +77,34 @@ exports.getCheckout = async (req, res) => {
             state: address.state,
             zipCode: address.zip_code
         }));
-
-        // Get cart items from session
-        const cartItems = req.session.cart || [];
         
         // Calculate totals
         let subtotal = 0;
-        for (const item of cartItems) {
-            subtotal += item.price * item.quantity;
+        for (const item of sessionCart) {
+            subtotal += (item.discount_price || item.price) * item.quantity;
         }
         const shipping = SHIPPING_COST;
-        const total = subtotal + shipping;
+        let total = subtotal + shipping;
+
+        // Apply coupon discount if exists
+        if (req.session.coupon) {
+            const discount = req.session.coupon.discount_type === 'percent' 
+                ? (subtotal * req.session.coupon.discount_value / 100)
+                : req.session.coupon.discount_value;
+            total -= Math.min(discount, subtotal);
+        }
 
         res.render('shop/checkout', {
             title: 'Checkout',
             user: user,
             profile: profile,
-            cartItems: cartItems,
-            subtotal: subtotal,
-            shipping: shipping,
-            total: total,
+            cartItems: sessionCart,
+            subtotal: subtotal.toFixed(2),
+            shipping: shipping.toFixed(2),
+            total: total.toFixed(2),
             addresses: addresses,
-            savedAddresses: savedAddresses
+            savedAddresses: savedAddresses,
+            coupon: req.session.coupon
         });
     } catch (error) {
         console.error('Error in getCheckout:', error);
@@ -125,13 +140,21 @@ exports.processCheckout = async (req, res) => {
             });
         }
 
-        // Format shipping address
-        const formattedAddress = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}`;
+        // Get cart items from session
+        const cartItems = req.session.cart;
+        if (!cartItems || cartItems.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cart is empty'
+            });
+        }
 
-        // Get cart items and calculate total
-        const cartItems = await Cart.getCartItems(userId);
-        const subtotal = await Cart.getCartTotal(userId);
-        const shipping = 10; // Fixed shipping cost
+        // Calculate totals
+        const subtotal = cartItems.reduce((total, item) => {
+            const price = item.discount_price || item.price;
+            return total + (parseFloat(price) * item.quantity);
+        }, 0);
+        const shipping = SHIPPING_COST;
         let total = subtotal + shipping;
 
         // Apply coupon discount if exists
@@ -142,6 +165,17 @@ exports.processCheckout = async (req, res) => {
             total -= Math.min(discount, subtotal);
         }
 
+        // Format shipping address as JSON
+        const formattedShippingAddress = {
+            fullName: shippingAddress.fullName,
+            address: shippingAddress.address,
+            city: shippingAddress.city,
+            state: shippingAddress.state,
+            zipCode: shippingAddress.zipCode,
+            phone: shippingAddress.phone,
+            email: shippingAddress.email
+        };
+
         // Create order
         const [orderResult] = await connection.query(
             `INSERT INTO orders (
@@ -151,18 +185,19 @@ exports.processCheckout = async (req, res) => {
                 payment_method,
                 status
             ) VALUES (?, ?, ?, ?, ?)`,
-            [userId, total, formattedAddress, payment_method, 'pending']
+            [userId, total, JSON.stringify(formattedShippingAddress), payment_method, 'pending']
         );
 
         const orderId = orderResult.insertId;
 
         // Add order items
         for (const item of cartItems) {
+            const price = item.discount_price || item.price;
             await connection.query(
                 `INSERT INTO order_items (
                     order_id, product_id, quantity, price
                 ) VALUES (?, ?, ?, ?)`,
-                [orderId, item.product_id, item.quantity, item.price]
+                [orderId, item.product_id, item.quantity, price]
             );
 
             // Update product stock
@@ -173,7 +208,6 @@ exports.processCheckout = async (req, res) => {
         }
 
         // Clear cart
-        await Cart.clearCart(userId);
         req.session.cart = [];
         req.session.coupon = null;
 

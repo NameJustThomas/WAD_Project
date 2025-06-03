@@ -19,9 +19,13 @@
         <div class="col-lg-6">
             <div class="product-gallery">
                 <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="img-fluid rounded main-image" alt="<%= product.name %>">
-                <div class="thumbnail-container d-flex gap-2 mt-3">
-                    <img src="<%= product.image_url || '/images/products/no-image.jpg' %>" class="thumbnail active border rounded" alt="<%= product.name %>">
-                </div>
+                <% if (product.images && product.images.length > 1) { %>
+                    <div class="thumbnail-container d-flex gap-2 mt-3">
+                        <% product.images.forEach(function(img) { %>
+                            <img src="<%= img %>" class="thumbnail border rounded" alt="<%= product.name %>">
+                        <% }) %>
+                    </div>
+                <% } %>
             </div>
         </div>
         <!-- Product Info -->
