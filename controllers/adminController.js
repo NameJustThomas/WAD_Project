@@ -135,20 +135,20 @@ exports.index = async (req, res) => {
 // Product management
 exports.getProducts = async (req, res) => {
     try {
-        const [products, categories] = await Promise.all([
-            Product.findAll(),
-            Category.findAll()
+        const [products, categories] = await Promise.all([//Promise.all is a function that runs multiple promises in parallel
+            Product.findAll(),//findAll is a function that gets all products
+            Category.findAll()//findAll is a function that gets all categories
         ]);
         
         // Format product data
-        const formattedProducts = products.map(product => ({
+        const formattedProducts = products.map(product => ({//map is a function that creates a new array with the results of calling a function on every element in the original array
             ...product,
-            formatted_price: parseFloat(product.price || 0).toFixed(2),
-            formatted_discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,
-            category_name: product.category_name || 'Uncategorized',
-            gender: product.gender || 'kids'
+            formatted_price: parseFloat(product.price || 0).toFixed(2),//format price to 2 decimal places
+            formatted_discount_price: product.discount_price ? parseFloat(product.discount_price).toFixed(2) : null,//format discount price to 2 decimal places
+            category_name: product.category_name || 'Uncategorized',//if category name is not set, set to Uncategorized
+            gender: product.gender || 'unisex'//if gender is not set, set to unisex
         }));
-
+        //render products page
         res.render('admin/products', {
             title: 'Manage Products',
             products: formattedProducts,
@@ -163,29 +163,29 @@ exports.getProducts = async (req, res) => {
         });
     }
 };
-
+//createProduct is a function that creates a new product
 exports.createProduct = async (req, res) => {
     try {
-        const errors = await Product.validate(req.body);
+        const errors = await Product.validate(req.body);//validate is a function that validates the product data
         if (errors) {
             return res.status(400).json({ errors });
         }
 
         // Ensure gender is one of the valid values
-        if (!['men', 'women', 'kids', 'unisex'].includes(req.body.gender)) {
-            req.body.gender = 'kids'; // Default to kids if invalid
+        if (!['men', 'women', 'kids', 'unisex'].includes(req.body.gender)) {//if gender is not one of the valid values, set to kids
+            req.body.gender = 'unisex'; // Default to unisex if invalid
         }
 
         // Handle image upload if exists
-        if (req.file) {
-            const productName = req.body.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            const timestamp = Date.now();
-            const extension = path.extname(req.file.originalname);
-            const newFilename = `${productName}-${timestamp}${extension}`;
+        if (req.file) {//if file exists, create new filename
+            const productName = req.body.name.toLowerCase().replace(/[^a-z0-9]/g, '-');//replace all non-alphanumeric characters with a dash
+            const timestamp = Date.now();//get current timestamp
+            const extension = path.extname(req.file.originalname);//get file extension
+            const newFilename = `${productName}-${timestamp}${extension}`;//create new filename
             
             // Rename the uploaded file
-            const oldPath = req.file.path;
-            const newPath = path.join(path.dirname(oldPath), newFilename);
+            const oldPath = req.file.path;//get old path
+            const newPath = path.join(path.dirname(oldPath), newFilename);//join old path and new filename
             await fs.rename(oldPath, newPath);
             
             // Update the image_url in the request body
@@ -206,15 +206,15 @@ exports.createProduct = async (req, res) => {
         });
     }
 };
-
+//updateProduct is a function that updates a product
 exports.updateProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updateData = req.body;
+        const { id } = req.params;//get id from params
+        const updateData = req.body;//get update data from body
 
         // Ensure gender is one of the valid values
         if (updateData.gender && !['men', 'women', 'kids', 'unisex'].includes(updateData.gender)) {
-            updateData.gender = 'kids'; // Default to kids if invalid
+            updateData.gender = 'unisex'; // Default to unisex if invalid
         }
 
         // Handle image upload if exists
@@ -223,35 +223,35 @@ exports.updateProduct = async (req, res) => {
             const currentProduct = await Product.findById(parseInt(id));
             
             // Delete old image if exists and not default
-            if (currentProduct && currentProduct.image_url && !currentProduct.image_url.includes('no-image.jpg')) {
-                const oldImagePath = path.join(__dirname, '../public', currentProduct.image_url);
+            if (currentProduct && currentProduct.image_url && !currentProduct.image_url.includes('no-image.jpg')) {//if current product exists, image url exists, and image url does not include no-image.jpg
+                const oldImagePath = path.join(__dirname, '../public', currentProduct.image_url);//join old image path and new image path
                 try {
-                    await fs.access(oldImagePath);
-                    await fs.unlink(oldImagePath);
+                    await fs.access(oldImagePath);//access old image path
+                    await fs.unlink(oldImagePath);//unlink old image path
                 } catch (error) {
-                    if (error.code !== 'ENOENT') {
+                    if (error.code !== 'ENOENT') {//if error code is not ENOENT, log error
                         console.error('Error deleting old image:', error);
                     }
                 }
             }
 
             // Create new filename using product name
-            const productName = updateData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            const timestamp = Date.now();
-            const extension = path.extname(req.file.originalname);
-            const newFilename = `${productName}-${timestamp}${extension}`;
+            const productName = updateData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');//replace all non-alphanumeric characters with a dash
+            const timestamp = Date.now();//get current timestamp
+            const extension = path.extname(req.file.originalname);//get file extension
+            const newFilename = `${productName}-${timestamp}${extension}`;//create new filename
             
             // Rename the uploaded file
-            const oldPath = req.file.path;
-            const newPath = path.join(path.dirname(oldPath), newFilename);
-            await fs.rename(oldPath, newPath);
+            const oldPath = req.file.path;//get old path
+            const newPath = path.join(path.dirname(oldPath), newFilename);//join old path and new filename
+            await fs.rename(oldPath, newPath);//rename old path to new path
             
             // Update the image_url in the update data
             updateData.image_url = `/images/products/${newFilename}`;
         }
 
         // Validate the update data
-        const errors = await Product.validate(updateData);
+        const errors = await Product.validate(updateData);//validate is a function that validates the update data
         if (errors) {
             return res.status(400).json({
                 success: false,
@@ -292,7 +292,7 @@ exports.updateProduct = async (req, res) => {
         });
     }
 };
-
+//deleteProduct is a function that deletes a product
 exports.deleteProduct = async (req, res) => {
     try {
         const success = await Product.delete(req.params.id);
@@ -333,7 +333,7 @@ exports.getCategories = async (req, res) => {
         });
     }
 };
-
+//createCategory is a function that creates a new category
 exports.createCategory = async (req, res) => {
     try {
         const errors = await Category.validate(req.body);
@@ -355,7 +355,7 @@ exports.createCategory = async (req, res) => {
         });
     }
 };
-
+//updateCategory is a function that updates a category
 exports.updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
@@ -418,7 +418,7 @@ exports.updateCategory = async (req, res) => {
         });
     }
 };
-
+//deleteCategory is a function that deletes a category
 exports.deleteCategory = async (req, res) => {
     try {
         const success = await Category.delete(req.params.id);
@@ -441,8 +441,7 @@ exports.deleteCategory = async (req, res) => {
         });
     }
 };
-
-// Order management
+//getOrders is a function that gets all orders
 exports.getOrders = async (req, res) => {
     try {
         const [orders] = await pool.query(`
@@ -473,7 +472,7 @@ exports.getOrders = async (req, res) => {
         });
     }
 };
-
+//updateOrder is a function that updates an order
 exports.updateOrder = async (req, res) => {
     try {
         const { id } = req.params;
@@ -519,8 +518,7 @@ exports.updateOrder = async (req, res) => {
         });
     }
 };
-
-// User management
+//getUsers is a function that gets all users
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.findAll();
@@ -544,7 +542,36 @@ exports.getUsers = async (req, res) => {
         });
     }
 };
+//getUsers is a function that gets all users
+exports.getUserDetails = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
 
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                status: user.status
+            }
+        });
+    } catch (error) {
+        console.error('Error in getUserDetails:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user details'
+        });
+    }
+};
+//updateUser is a function that updates a user
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
@@ -553,16 +580,9 @@ exports.updateUser = async (req, res) => {
         // Validate the update data
         const errors = await User.validate(updateData);
         if (errors) {
-            if (req.xhr || req.headers.accept.includes('application/json')) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation failed',
-                    errors
-                });
-            }
-            return res.status(400).render('admin/users', {
-                title: 'Manage Users',
-                error: 'Validation failed',
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
                 errors
             });
         }
@@ -570,44 +590,58 @@ exports.updateUser = async (req, res) => {
         // Update the user
         const success = await User.update(parseInt(id), updateData);
         if (!success) {
-            if (req.xhr || req.headers.accept.includes('application/json')) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-            return res.status(404).render('error', {
-                title: 'Error',
+            return res.status(404).json({
+                success: false,
                 message: 'User not found'
             });
         }
 
-        // Send response based on request type
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.json({
-                success: true,
-                message: 'User updated successfully'
-            });
-        }
-        
-        req.flash('success', 'User updated successfully');
-        res.redirect('/admin/users');
+        res.json({
+            success: true,
+            message: 'User updated successfully'
+        });
     } catch (error) {
         console.error('Error in updateUser:', error);
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            return res.status(500).json({
-                success: false,
-                message: 'Error updating user'
-            });
-        }
-        res.status(500).render('error', {
-            title: 'Error',
-            message: 'Error updating user',
-            error: process.env.NODE_ENV === 'development' ? error : {}
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user'
         });
     }
 };
+//updateUserStatus is a function that updates a user's status
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
 
+        if (!['active', 'inactive', 'banned'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status'
+            });
+        }
+
+        const success = await User.updateStatus(parseInt(id), status);
+        if (!success) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'User status updated successfully'
+        });
+    } catch (error) {
+        console.error('Error in updateUserStatus:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user status'
+        });
+    }
+};
+//deleteUser is a function that deletes a user
 exports.deleteUser = async (req, res) => {
     try {
         const success = await User.delete(req.params.id);
@@ -825,7 +859,7 @@ exports.getProduct = async (req, res) => {
 // Upload product image
 exports.uploadProductImage = async (req, res) => {
     try {
-        upload.single('image')(req, res, async function(err) {
+        upload.single('image')(req, res, async function(err) {//upload.single('image') is a middleware that uploads a single image to the server
             if (err) {
                 return res.status(400).json({
                     success: false,
@@ -1064,38 +1098,7 @@ exports.getOrderDetails = async (req, res) => {
 // Get user details
 exports.getUserDetails = async (req, res) => {
     try {
-        const { id } = req.params;
-        const userId = parseInt(id);
-
-        // Validate user ID
-        if (isNaN(userId)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid user ID'
-            });
-        }
-
-        // Get user details with profile information
-        const [user] = await pool.query(`
-            SELECT 
-                u.*,
-                p.first_name,
-                p.last_name,
-                p.phone,
-                p.date_of_birth,
-                p.gender,
-                a.address_line1,
-                a.address_line2,
-                a.city,
-                a.state,
-                a.postal_code,
-                a.country
-            FROM users u
-            LEFT JOIN profiles p ON u.id = p.user_id
-            LEFT JOIN addresses a ON u.id = a.user_id
-            WHERE u.id = ?
-        `, [userId]);
-
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -1103,39 +1106,21 @@ exports.getUserDetails = async (req, res) => {
             });
         }
 
-        // Get user's orders
-        const [orders] = await pool.query(`
-            SELECT 
-                id,
-                total_amount,
-                status,
-                created_at
-            FROM orders
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-        `, [userId]);
-
-        // Format user data
-        const formattedUser = {
-            ...user,
-            full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'N/A',
-            formatted_date: user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A',
-            orders: orders.map(order => ({
-                ...order,
-                formatted_amount: parseFloat(order.total_amount || 0).toFixed(2),
-                formatted_date: new Date(order.created_at).toLocaleDateString()
-            }))
-        };
-
         res.json({
             success: true,
-            user: formattedUser
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                status: user.status
+            }
         });
     } catch (error) {
         console.error('Error in getUserDetails:', error);
         res.status(500).json({
             success: false,
-            message: 'Error loading user details'
+            message: 'Error fetching user details'
         });
     }
 };

@@ -52,6 +52,7 @@ router.put('/orders/:orderId/status', adminController.updateOrderStatus);
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUserDetails);
 router.put('/users/:id', adminController.updateUser);
+router.put('/users/:id/status', adminController.updateUserStatus);
 router.delete('/users/:id', adminController.deleteUser);
 
 // Analytics
